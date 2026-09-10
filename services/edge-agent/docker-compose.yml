@@ -1,0 +1,8 @@
+services:
+  edge-agent:
+    image: oilwell-ai-edge:latest
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ${EDGE_DATA_HOST_DIR:-/home/dowdah/oilwell-data}:/data:ro
