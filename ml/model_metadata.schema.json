@@ -6,6 +6,7 @@
   "properties": {
     "version": {"type": "string"},
     "model_type": {"enum": ["isolation_forest", "xgboost", "tcn"]},
+    "mode": {"enum": ["active", "shadow"]},
     "training_data_version": {"type": "string"},
     "features": {"type": "array", "items": {"type": "string"}, "minItems": 7},
     "window_seconds": {"const": 180},
@@ -15,8 +16,11 @@
     "created_at": {"type": "string", "format": "date-time"},
     "git_commit": {"type": "string"},
     "artifact_file": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
-    "feature_schema_version": {"const": "3w-7v-window-stats-v1"},
+    "feature_schema_version": {"enum": ["3w-7v-window-stats-v1", "3w-7v-tcn-v1"]},
     "manifest_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-    "parameters": {"type": "object"}
-  }
+    "parameters": {"type": "object"},
+    "config_file": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "scaler_file": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"}
+  },
+  "allOf": [{"if": {"properties": {"model_type": {"const": "tcn"}}}, "then": {"required": ["config_file", "scaler_file"]}}]
 }

@@ -10,3 +10,4 @@ httpx==0.28.1
 jsonschema==4.23.0
 numpy==2.2.5
 xgboost==3.0.0
+torch>=2.6,<3

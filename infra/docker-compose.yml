@@ -18,7 +18,9 @@ services:
 
   api:
     image: oilwell-ai-api:latest
-    build: ../apps/api
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     env_file: ${ENV_FILE:-../.env}
     depends_on:
@@ -31,6 +33,7 @@ services:
     # Missing artifacts leave inference unavailable; this mount is read-only.
     volumes:
       - ../ml/artifacts/current:/models/current:ro
+      - ../ml/artifacts/tcn-shadow:/models/shadow:ro
     mem_limit: 512m
 
   mosquitto:

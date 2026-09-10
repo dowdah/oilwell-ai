@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     mqtt_topic_prefix: str = "3w"
     telemetry_window_seconds: int = 180
     inference_model_dir: Path = Path("/models/current")
+    shadow_inference_model_dir: Path = Path("/models/shadow")
     inference_anomaly_threshold: float = 0.50
     inference_confirmation_windows: int = 2
     inference_recovery_windows: int = 3

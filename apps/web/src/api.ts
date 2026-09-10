@@ -7,15 +7,23 @@ export type Device = { id: string; status: string; last_heartbeat: string | null
 export type Telemetry = { timestamp: string; sequence: number; measurements: Record<string, number>; event_hint?: string }
 export type Inference = {
   id: number; well_id: string; telemetry_id: number; status: string
+  model_type: string; model_mode: 'active' | 'shadow'
   window_start: string | null; window_end: string | null; model_version: string | null
   predicted_class: string | null; confidence: number | null; anomaly_score: number | null
   feature_schema_version: string | null; inference_latency_ms: number | null
+}
+export type ModelStatus = {
+  mode: 'active' | 'shadow'; status: string; error: string | null; model_type: string | null
+  version: string | null; training_data_version: string | null; metrics: Record<string, number> | null
+  feature_schema_version: string | null
 }
 
 export const getDashboard = () => api.get<{ wells: number; online_devices: number; active_alarms: number }>('/dashboard').then((r) => r.data)
 export const getWells = () => api.get<{ id: string; display_name: string }[]>('/wells').then((r) => r.data)
 export const getHistory = (wellId: string) => api.get<Telemetry[]>(`/wells/${wellId}/telemetry`).then((r) => r.data)
 export const getLatestInference = (wellId: string) => api.get<Inference>(`/wells/${wellId}/inference/latest`).then((r) => r.data)
+export const getLatestComparison = (wellId: string) => api.get<Inference[]>(`/wells/${wellId}/inference/comparison/latest`).then((r) => r.data)
+export const getModels = () => api.get<ModelStatus[]>('/models').then((r) => r.data)
 export const getAlarms = () => api.get<Alarm[]>('/alarms').then((r) => r.data)
 export const acknowledge = (id: number) => api.post<Alarm>(`/alarms/${id}/acknowledge`).then((r) => r.data)
 export const getDevices = () => api.get<Device[]>('/edge-devices').then((r) => r.data)

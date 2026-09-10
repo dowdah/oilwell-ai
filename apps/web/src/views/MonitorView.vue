@@ -32,7 +32,7 @@ onMounted(async () => {
     if (message.event === 'telemetry' && message.payload.well_id === selected.value) {
       samples.value = [...samples.value.slice(-359), message.payload]; render()
     }
-    if (message.event === 'inference' && message.payload.well_id === selected.value) inference.value = message.payload
+    if (message.event === 'inference' && message.payload.well_id === selected.value && message.payload.model_mode === 'active') inference.value = message.payload
   }
   window.addEventListener('resize', render)
 })
@@ -40,5 +40,5 @@ onBeforeUnmount(() => { socket?.close(); chart?.dispose(); window.removeEventLis
 </script>
 
 <template>
-  <div class="view"><div class="view-title"><div><h2>实时监测</h2><p>固定 7 变量契约；当前显示四条关键趋势</p></div><select v-model="selected" aria-label="选择油井"><option disabled value="">选择油井</option><option v-for="well in wells" :key="well.id" :value="well.id">{{ well.display_name }}</option></select></div><section class="panel chart-panel"><div class="prediction"><div><span>当前推理</span><strong>{{ inference?.predicted_class ?? '等待模型制品' }}</strong></div><div><span>窗口状态</span><strong>{{ inference?.status ?? '无推理记录' }}</strong></div><div><span>置信度 / 异常分数</span><strong class="normal">{{ inference?.confidence != null ? `${(inference.confidence * 100).toFixed(1)}% / ${(inference.anomaly_score! * 100).toFixed(1)}%` : '—' }}</strong></div><small class="prediction-note">模型输出仅用于辅助分析与教学演示，不构成现场操作指令。</small></div><div ref="chartElement" class="chart" aria-label="传感器实时趋势图"></div></section></div>
+  <div class="view"><div class="view-title"><div><h2>实时监测</h2><p>固定 7 变量契约；显示 XGBoost 活动模型结论，TCN 对照位于模型中心</p></div><select v-model="selected" aria-label="选择油井"><option disabled value="">选择油井</option><option v-for="well in wells" :key="well.id" :value="well.id">{{ well.display_name }}</option></select></div><section class="panel chart-panel"><div class="prediction"><div><span>当前活动推理</span><strong>{{ inference?.predicted_class ?? '等待模型制品' }}</strong></div><div><span>窗口状态</span><strong>{{ inference?.status ?? '无推理记录' }}</strong></div><div><span>置信度 / 异常分数</span><strong class="normal">{{ inference?.confidence != null ? `${(inference.confidence * 100).toFixed(1)}% / ${(inference.anomaly_score! * 100).toFixed(1)}%` : '—' }}</strong></div><small class="prediction-note">模型输出仅用于辅助分析与教学演示，不构成现场操作指令。</small></div><div ref="chartElement" class="chart" aria-label="传感器实时趋势图"></div></section></div>
 </template>

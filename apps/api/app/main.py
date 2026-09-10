@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException, WebSocket
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_settings
@@ -12,7 +12,7 @@ from .models import Alarm, EdgeDevice, InferenceResult, Telemetry, Well
 from .mqtt import MqttBridge
 from .realtime import hub
 from .schemas import DeviceStatusIn, ReplayCommand, TelemetryIn
-from .services import acknowledge_alarm, inference_view, persist_inference, process_device_status, process_telemetry
+from .services import acknowledge_alarm, inference_view, persist_inferences, process_device_status, process_telemetry
 
 settings = get_settings()
 inference_runtime = InferenceRuntime(settings)
@@ -23,6 +23,14 @@ bridge = MqttBridge(settings, inference_runtime)
 async def lifespan(_: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # The phase-2 table allowed only one result per telemetry point. Upgrade existing
+        # PostgreSQL deployments before persisting active and shadow results together.
+        if conn.dialect.name == "postgresql":
+            await conn.execute(text("ALTER TABLE inference_results DROP CONSTRAINT IF EXISTS uq_inference_telemetry"))
+            await conn.execute(text("ALTER TABLE inference_results ADD COLUMN IF NOT EXISTS model_type VARCHAR(32) NOT NULL DEFAULT 'xgboost'"))
+            await conn.execute(text("ALTER TABLE inference_results ADD COLUMN IF NOT EXISTS model_mode VARCHAR(16) NOT NULL DEFAULT 'active'"))
+            await conn.execute(text("ALTER TABLE inference_results DROP CONSTRAINT IF EXISTS uq_inference_telemetry_model_mode"))
+            await conn.execute(text("ALTER TABLE inference_results ADD CONSTRAINT uq_inference_telemetry_model_mode UNIQUE (telemetry_id, model_mode)"))
     inference_runtime.load()
     await bridge.start()
     yield
@@ -44,6 +52,7 @@ async def health() -> dict:
         "window_seconds": settings.telemetry_window_seconds,
         "inference_status": inference_runtime.status,
         "inference_error": inference_runtime.load_error,
+        "models": inference_runtime.model_status(),
     }
 
 
@@ -55,17 +64,18 @@ async def ingest_telemetry(packet: TelemetryIn, session: AsyncSession = Depends(
     event = packet.model_dump(mode="json", by_alias=True)
     hub.add_telemetry(event)
     await hub.broadcast("telemetry", event)
-    outcome = inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
-    inference, alarm = await persist_inference(
-        session, row, outcome, settings.inference_anomaly_threshold,
+    outcomes = inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
+    inferences, alarm = await persist_inferences(
+        session, row, outcomes, settings.inference_anomaly_threshold,
         settings.inference_confirmation_windows, settings.inference_recovery_windows,
     )
-    await hub.broadcast("inference", inference_view(inference))
+    for inference in inferences:
+        await hub.broadcast("inference", inference_view(inference))
     if alarm:
         await hub.broadcast("alarm", alarm_view(alarm))
     return {
-        "accepted": True, "telemetry_id": row.id, "inference_id": inference.id,
-        "inference_status": inference.status, "alarm_id": alarm.id if alarm else None,
+        "accepted": True, "telemetry_id": row.id, "inferences": [inference_view(item) for item in inferences],
+        "alarm_id": alarm.id if alarm else None,
     }
 
 
@@ -100,25 +110,43 @@ async def telemetry_history(well_id: str, limit: int = 360, session: AsyncSessio
 
 
 @app.get("/api/wells/{well_id}/inference")
-async def inference_history(well_id: str, limit: int = 360, session: AsyncSession = Depends(get_session)) -> list[dict]:
+async def inference_history(well_id: str, mode: str | None = None, limit: int = 360, session: AsyncSession = Depends(get_session)) -> list[dict]:
     if not 1 <= limit <= 5000:
         raise HTTPException(422, "limit must be between 1 and 5000")
-    rows = (await session.scalars(
-        select(InferenceResult).where(InferenceResult.well_id == well_id)
-        .order_by(desc(InferenceResult.id)).limit(limit)
-    )).all()
+    statement = select(InferenceResult).where(InferenceResult.well_id == well_id)
+    if mode:
+        if mode not in {"active", "shadow"}:
+            raise HTTPException(422, "mode must be active or shadow")
+        statement = statement.where(InferenceResult.model_mode == mode)
+    rows = (await session.scalars(statement.order_by(desc(InferenceResult.id)).limit(limit))).all()
     return [inference_view(item) for item in reversed(rows)]
 
 
 @app.get("/api/wells/{well_id}/inference/latest")
-async def latest_inference(well_id: str, session: AsyncSession = Depends(get_session)) -> dict:
+async def latest_inference(well_id: str, mode: str = "active", session: AsyncSession = Depends(get_session)) -> dict:
+    if mode not in {"active", "shadow"}:
+        raise HTTPException(422, "mode must be active or shadow")
     result = await session.scalar(
-        select(InferenceResult).where(InferenceResult.well_id == well_id)
+        select(InferenceResult).where(InferenceResult.well_id == well_id, InferenceResult.model_mode == mode)
         .order_by(desc(InferenceResult.id)).limit(1)
     )
     if result is None:
         raise HTTPException(404, "no inference result for well")
     return inference_view(result)
+
+
+@app.get("/api/models")
+async def models() -> list[dict]:
+    return inference_runtime.model_status()
+
+
+@app.get("/api/wells/{well_id}/inference/comparison/latest")
+async def latest_comparison(well_id: str, session: AsyncSession = Depends(get_session)) -> list[dict]:
+    latest = await session.scalar(select(InferenceResult.telemetry_id).where(InferenceResult.well_id == well_id).order_by(desc(InferenceResult.telemetry_id)).limit(1))
+    if latest is None:
+        raise HTTPException(404, "no inference result for well")
+    rows = (await session.scalars(select(InferenceResult).where(InferenceResult.well_id == well_id, InferenceResult.telemetry_id == latest).order_by(InferenceResult.model_mode))).all()
+    return [inference_view(row) for row in rows]
 
 
 @app.get("/api/alarms")

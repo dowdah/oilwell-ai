@@ -75,11 +75,13 @@ class AlarmState(Base):
 
 class InferenceResult(Base):
     __tablename__ = "inference_results"
-    __table_args__ = (UniqueConstraint("telemetry_id", name="uq_inference_telemetry"),)
+    __table_args__ = (UniqueConstraint("telemetry_id", "model_mode", name="uq_inference_telemetry_model_mode"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     well_id: Mapped[str] = mapped_column(ForeignKey("wells.id"), index=True)
     telemetry_id: Mapped[int] = mapped_column(ForeignKey("telemetry.id"), index=True)
+    model_type: Mapped[str] = mapped_column(String(32), index=True)
+    model_mode: Mapped[str] = mapped_column(String(16), index=True)
     status: Mapped[str] = mapped_column(String(32), index=True)
     window_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     window_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
