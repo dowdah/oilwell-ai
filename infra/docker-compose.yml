@@ -28,6 +28,9 @@ services:
         condition: service_started
     ports:
       - "127.0.0.1:8000:8000"
+    # Missing artifacts leave inference unavailable; this mount is read-only.
+    volumes:
+      - ../ml/artifacts/current:/models/current:ro
     mem_limit: 512m
 
   mosquitto:

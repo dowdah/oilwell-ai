@@ -1,0 +1,6 @@
+numpy==2.2.5
+pyarrow==19.0.1
+scikit-learn==1.6.1
+xgboost==3.0.0
+joblib==1.4.2
+matplotlib==3.10.1

@@ -56,3 +56,37 @@ class Alarm(Base):
     message: Mapped[str] = mapped_column(Text)
     raised_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AlarmState(Base):
+    """Persistent debounce state; prevents duplicate alarms after restarts."""
+
+    __tablename__ = "alarm_states"
+
+    well_id: Mapped[str] = mapped_column(ForeignKey("wells.id"), primary_key=True)
+    abnormal_streak: Mapped[int] = mapped_column(Integer, default=0)
+    normal_streak: Mapped[int] = mapped_column(Integer, default=0)
+    armed: Mapped[bool] = mapped_column(default=True)
+    active_alarm_id: Mapped[int | None] = mapped_column(ForeignKey("alarms.id"))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class InferenceResult(Base):
+    __tablename__ = "inference_results"
+    __table_args__ = (UniqueConstraint("telemetry_id", name="uq_inference_telemetry"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    well_id: Mapped[str] = mapped_column(ForeignKey("wells.id"), index=True)
+    telemetry_id: Mapped[int] = mapped_column(ForeignKey("telemetry.id"), index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    window_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    window_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    model_version: Mapped[str | None] = mapped_column(String(80), index=True)
+    predicted_class: Mapped[str | None] = mapped_column(String(80))
+    confidence: Mapped[float | None] = mapped_column(Float)
+    anomaly_score: Mapped[float | None] = mapped_column(Float)
+    feature_schema_version: Mapped[str | None] = mapped_column(String(80))
+    inference_latency_ms: Mapped[float | None] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

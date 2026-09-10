@@ -7,20 +7,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_settings
 from .database import Base, engine, get_session
-from .models import Alarm, EdgeDevice, Telemetry, Well
+from .inference import InferenceRuntime
+from .models import Alarm, EdgeDevice, InferenceResult, Telemetry, Well
 from .mqtt import MqttBridge
 from .realtime import hub
 from .schemas import DeviceStatusIn, ReplayCommand, TelemetryIn
-from .services import acknowledge_alarm, process_device_status, process_telemetry
+from .services import acknowledge_alarm, inference_view, persist_inference, process_device_status, process_telemetry
 
 settings = get_settings()
-bridge = MqttBridge(settings)
+inference_runtime = InferenceRuntime(settings)
+bridge = MqttBridge(settings, inference_runtime)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    inference_runtime.load()
     await bridge.start()
     yield
     await bridge.stop()
@@ -36,20 +39,34 @@ def alarm_view(row: Alarm) -> dict:
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "mqtt_connected": bridge.client is not None, "window_seconds": settings.telemetry_window_seconds}
+    return {
+        "status": "ok", "mqtt_connected": bridge.client is not None,
+        "window_seconds": settings.telemetry_window_seconds,
+        "inference_status": inference_runtime.status,
+        "inference_error": inference_runtime.load_error,
+    }
 
 
 @app.post("/api/telemetry", status_code=202)
 async def ingest_telemetry(packet: TelemetryIn, session: AsyncSession = Depends(get_session)) -> dict:
-    row, alarm = await process_telemetry(session, packet)
+    row = await process_telemetry(session, packet)
     if row is None:
         return {"accepted": False, "reason": "duplicate sequence"}
     event = packet.model_dump(mode="json", by_alias=True)
     hub.add_telemetry(event)
     await hub.broadcast("telemetry", event)
+    outcome = inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
+    inference, alarm = await persist_inference(
+        session, row, outcome, settings.inference_anomaly_threshold,
+        settings.inference_confirmation_windows, settings.inference_recovery_windows,
+    )
+    await hub.broadcast("inference", inference_view(inference))
     if alarm:
         await hub.broadcast("alarm", alarm_view(alarm))
-    return {"accepted": True, "telemetry_id": row.id, "alarm_id": alarm.id if alarm else None}
+    return {
+        "accepted": True, "telemetry_id": row.id, "inference_id": inference.id,
+        "inference_status": inference.status, "alarm_id": alarm.id if alarm else None,
+    }
 
 
 @app.post("/api/edge-devices/status", status_code=202)
@@ -80,6 +97,28 @@ async def telemetry_history(well_id: str, limit: int = 360, session: AsyncSessio
         raise HTTPException(422, "limit must be between 1 and 5000")
     rows = (await session.scalars(select(Telemetry).where(Telemetry.well_id == well_id).order_by(desc(Telemetry.timestamp)).limit(limit))).all()
     return [{"timestamp": item.timestamp, "sequence": item.sequence, "measurements": {"P_PDG": item.p_pdg, "P_TPT": item.p_tpt, "T_TPT": item.t_tpt, "P_MON_CKP": item.p_mon_ckp, "T_JUS_CKP": item.t_jus_ckp, "P_JUS_CKGL": item.p_jus_ckgl, "QGL": item.qgl}, "event_hint": item.event_hint} for item in reversed(rows)]
+
+
+@app.get("/api/wells/{well_id}/inference")
+async def inference_history(well_id: str, limit: int = 360, session: AsyncSession = Depends(get_session)) -> list[dict]:
+    if not 1 <= limit <= 5000:
+        raise HTTPException(422, "limit must be between 1 and 5000")
+    rows = (await session.scalars(
+        select(InferenceResult).where(InferenceResult.well_id == well_id)
+        .order_by(desc(InferenceResult.id)).limit(limit)
+    )).all()
+    return [inference_view(item) for item in reversed(rows)]
+
+
+@app.get("/api/wells/{well_id}/inference/latest")
+async def latest_inference(well_id: str, session: AsyncSession = Depends(get_session)) -> dict:
+    result = await session.scalar(
+        select(InferenceResult).where(InferenceResult.well_id == well_id)
+        .order_by(desc(InferenceResult.id)).limit(1)
+    )
+    if result is None:
+        raise HTTPException(404, "no inference result for well")
+    return inference_view(result)
 
 
 @app.get("/api/alarms")

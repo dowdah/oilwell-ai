@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     mqtt_ca_file: Path | None = None
     mqtt_topic_prefix: str = "3w"
     telemetry_window_seconds: int = 180
+    inference_model_dir: Path = Path("/models/current")
+    inference_anomaly_threshold: float = 0.50
+    inference_confirmation_windows: int = 2
+    inference_recovery_windows: int = 3
 
 
 @lru_cache

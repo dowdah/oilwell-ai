@@ -28,3 +28,4 @@ apps/web/dist/
 # OS/editor
 .DS_Store
 .vscode/
+docs/.local/

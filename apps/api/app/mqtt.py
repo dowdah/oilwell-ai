@@ -8,16 +8,18 @@ from pydantic import ValidationError
 
 from .config import Settings
 from .database import SessionLocal
+from .inference import InferenceRuntime
 from .realtime import hub
 from .schemas import DeviceStatusIn, TelemetryIn
-from .services import process_device_status, process_telemetry
+from .services import inference_view, persist_inference, process_device_status, process_telemetry
 
 logger = logging.getLogger(__name__)
 
 
 class MqttBridge:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, inference_runtime: InferenceRuntime) -> None:
         self.settings = settings
+        self.inference_runtime = inference_runtime
         self.client: aiomqtt.Client | None = None
         self.task: asyncio.Task | None = None
 
@@ -66,13 +68,23 @@ class MqttBridge:
             body = json.loads(payload)
             async with SessionLocal() as session:
                 if topic.endswith("/telemetry"):
-                    row, alarm = await process_telemetry(session, TelemetryIn.model_validate(body))
+                    packet = TelemetryIn.model_validate(body)
+                    row = await process_telemetry(session, packet)
                     if row:
-                        event = TelemetryIn.model_validate(body).model_dump(mode="json", by_alias=True)
+                        event = packet.model_dump(mode="json", by_alias=True)
                         hub.add_telemetry(event)
                         await hub.broadcast("telemetry", event)
-                    if alarm:
-                        await hub.broadcast("alarm", {"id": alarm.id, "well_id": alarm.well_id, "event_type": alarm.event_type, "severity": alarm.severity})
+                        outcome = self.inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
+                        inference, alarm = await persist_inference(
+                            session, row, outcome, self.settings.inference_anomaly_threshold,
+                            self.settings.inference_confirmation_windows, self.settings.inference_recovery_windows,
+                        )
+                        await hub.broadcast("inference", inference_view(inference))
+                        if alarm:
+                            await hub.broadcast("alarm", {
+                                "id": alarm.id, "well_id": alarm.well_id, "event_type": alarm.event_type,
+                                "severity": alarm.severity,
+                            })
                 elif topic.endswith("/status"):
                     device = await process_device_status(session, DeviceStatusIn.model_validate(body))
                     await hub.broadcast("device_status", {"device_id": device.id, "status": device.status, "last_heartbeat": device.last_heartbeat.isoformat()})
