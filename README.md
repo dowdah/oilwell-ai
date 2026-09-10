@@ -39,7 +39,7 @@ docker compose -f infra/docker-compose.yml up --build
 cd apps/web && npm install && npm run dev
 ```
 
-API 文档位于 `http://localhost:8000/docs`。生产环境由 Nginx 提供 Web 静态文件，并仅公开 HTTPS 与 MQTT TLS 端口；部署前需准备域名、证书和 MQTT 凭据。
+API 文档位于 `http://localhost:8000/docs`。生产环境由 Nginx 公开 HTTPS Web；Pi 的 MQTT TLS 经 WireGuard 等私网覆盖网络进入 ECS，避免因动态公网 IP 或 CGNAT 依赖 MQTT 公网入口。部署前需准备域名、证书、MQTT 凭据和私网端点配置。
 
 ## 验证
 
@@ -50,7 +50,7 @@ cd apps/web && npm run build
 
 ## 安全与免责声明
 
-MQTT 禁止匿名访问，使用独立设备凭据、TLS 与 topic ACL。AI 输出仅用于辅助分析与教学演示，**不构成实际油井控制指令或生产操作依据**。
+MQTT 禁止匿名访问，使用独立设备凭据、TLS、topic ACL 与私网覆盖网络。AI 输出仅用于辅助分析与教学演示，**不构成实际油井控制指令或生产操作依据**。
 
 ## License
 

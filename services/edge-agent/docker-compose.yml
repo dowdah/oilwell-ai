@@ -4,5 +4,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    # Preserve certificate hostname validation while routing MQTT through the
+    # private overlay endpoint rather than a public broker address.
+    extra_hosts:
+      - "${MQTT_HOST:?set MQTT_HOST}:${MQTT_CONNECT_IP:?set MQTT_CONNECT_IP}"
     volumes:
       - ${EDGE_DATA_HOST_DIR:-/home/dowdah/oilwell-data}:/data:ro
