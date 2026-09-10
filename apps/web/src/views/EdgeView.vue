@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { command, getDevices, type Device } from '../api'
+const devices = ref<Device[]>([]); const message = ref(''); const speed = ref(10)
+async function load() { try { devices.value = await getDevices() } catch { message.value = '等待边缘设备注册。' } }
+async function send(deviceId: string, payload: Record<string, unknown>) { try { await command(deviceId, payload); message.value = `${payload.command} 指令已发送至 ${deviceId}` } catch { message.value = 'MQTT 尚未连接，指令未发送。' } }
+onMounted(load)
+</script>
+<template><div class="view"><div class="view-title"><div><h2>边缘设备与数据回放</h2><p>命令经 API 审核后发布至设备私有 MQTT topic</p></div><button class="secondary" @click="load">刷新状态</button></div><p v-if="message" class="hint">{{ message }}</p><section v-if="devices.length" class="edge-grid"><article v-for="device in devices" :key="device.id" class="panel edge-card"><div class="panel-head"><h3><span class="online-dot"></span> {{ device.id }}</h3><span>{{ device.status }}</span></div><dl><dt>最后心跳</dt><dd>{{ device.last_heartbeat ? new Date(device.last_heartbeat).toLocaleString() : '—' }}</dd><dt>当前速度</dt><dd>{{ device.metrics.speed ?? '—' }}×</dd><dt>回放实例</dt><dd>{{ device.metrics.instance ?? '尚未加载' }}</dd></dl><div class="controls"><button @click="send(device.id, { command: 'START' })">开始</button><button class="secondary" @click="send(device.id, { command: 'PAUSE' })">暂停</button><button class="secondary" @click="send(device.id, { command: 'STOP' })">停止</button></div><div class="speed"><label>回放速度 <select v-model="speed"><option v-for="item in [1,5,10,20]" :key="item" :value="item">{{ item }}×</option></select></label><button @click="send(device.id, { command: 'SET_SPEED', speed })">应用</button></div></article></section><section v-else class="panel empty">树莓派启动 Edge Agent 后将在这里出现。数据目录以容器卷挂载，完整数据不会上传到 Git 或 ECS。</section></div></template>

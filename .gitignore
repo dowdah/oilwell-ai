@@ -1,0 +1,30 @@
+# Secrets and deployment material
+.env
+.env.*
+!.env.example
+infra/certs/
+infra/mosquitto/passwords/
+
+# Data and model artifacts
+data/
+ml/data/raw/
+ml/artifacts/
+*.parquet
+*.pt
+*.pkl
+*.joblib
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Node
+node_modules/
+dist/
+apps/web/dist/
+
+# OS/editor
+.DS_Store
+.vscode/

@@ -1,0 +1,81 @@
+import asyncio
+import json
+import logging
+import ssl
+
+import aiomqtt
+from pydantic import ValidationError
+
+from .config import Settings
+from .database import SessionLocal
+from .realtime import hub
+from .schemas import DeviceStatusIn, TelemetryIn
+from .services import process_device_status, process_telemetry
+
+logger = logging.getLogger(__name__)
+
+
+class MqttBridge:
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        self.client: aiomqtt.Client | None = None
+        self.task: asyncio.Task | None = None
+
+    def _tls_context(self) -> ssl.SSLContext | None:
+        if not self.settings.mqtt_tls:
+            return None
+        context = ssl.create_default_context(cafile=str(self.settings.mqtt_ca_file) if self.settings.mqtt_ca_file else None)
+        return context
+
+    async def start(self) -> None:
+        self.task = asyncio.create_task(self._run(), name="mqtt-bridge")
+
+    async def stop(self) -> None:
+        if self.task:
+            self.task.cancel()
+            await asyncio.gather(self.task, return_exceptions=True)
+
+    async def publish_command(self, device_id: str, payload: dict) -> None:
+        if not self.client:
+            raise RuntimeError("MQTT bridge is not connected")
+        await self.client.publish(f"{self.settings.mqtt_topic_prefix}/edge/{device_id}/command", json.dumps(payload))
+
+    async def _run(self) -> None:
+        while True:
+            try:
+                async with aiomqtt.Client(
+                    hostname=self.settings.mqtt_host, port=self.settings.mqtt_port,
+                    username=self.settings.api_mqtt_username or self.settings.mqtt_username,
+                    password=self.settings.api_mqtt_password or self.settings.mqtt_password,
+                    tls_context=self._tls_context(),
+                ) as client:
+                    self.client = client
+                    async with client.messages() as messages:
+                        await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/telemetry")
+                        await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/status")
+                        async for message in messages:
+                            await self._handle(message.topic.value, bytes(message.payload))
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                self.client = None
+                logger.warning("MQTT connection lost: %s", exc)
+                await asyncio.sleep(5)
+
+    async def _handle(self, topic: str, payload: bytes) -> None:
+        try:
+            body = json.loads(payload)
+            async with SessionLocal() as session:
+                if topic.endswith("/telemetry"):
+                    row, alarm = await process_telemetry(session, TelemetryIn.model_validate(body))
+                    if row:
+                        event = TelemetryIn.model_validate(body).model_dump(mode="json", by_alias=True)
+                        hub.add_telemetry(event)
+                        await hub.broadcast("telemetry", event)
+                    if alarm:
+                        await hub.broadcast("alarm", {"id": alarm.id, "well_id": alarm.well_id, "event_type": alarm.event_type, "severity": alarm.severity})
+                elif topic.endswith("/status"):
+                    device = await process_device_status(session, DeviceStatusIn.model_validate(body))
+                    await hub.broadcast("device_status", {"device_id": device.id, "status": device.status, "last_heartbeat": device.last_heartbeat.isoformat()})
+        except (json.JSONDecodeError, ValidationError) as exc:
+            logger.warning("Discarded invalid MQTT payload on %s: %s", topic, exc)

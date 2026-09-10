@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OilWell AI model metadata",
+  "type": "object",
+  "required": ["version", "model_type", "training_data_version", "features", "window_seconds", "class_mapping", "metrics", "created_at", "git_commit"],
+  "properties": {
+    "version": {"type": "string"},
+    "model_type": {"enum": ["isolation_forest", "xgboost", "tcn"]},
+    "training_data_version": {"type": "string"},
+    "features": {"type": "array", "items": {"type": "string"}, "minItems": 7},
+    "window_seconds": {"const": 180},
+    "class_mapping": {"type": "object"},
+    "metrics": {"type": "object"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "git_commit": {"type": "string"}
+  }
+}

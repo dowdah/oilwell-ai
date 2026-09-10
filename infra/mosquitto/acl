@@ -1,0 +1,12 @@
+# Replace edge-pi-01 with the actual device ID when provisioning credentials.
+user edge-pi-01
+topic write 3w/edge/edge-pi-01/telemetry
+topic write 3w/edge/edge-pi-01/status
+topic read 3w/edge/edge-pi-01/command
+
+# The cloud service subscribes to telemetry/status and sends commands.
+user api-service
+topic read 3w/edge/+/telemetry
+topic read 3w/edge/+/status
+topic write 3w/edge/+/command
+topic write 3w/well/+/alarm
