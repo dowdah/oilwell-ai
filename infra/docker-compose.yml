@@ -33,6 +33,10 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - ${APP_DOMAIN}
     ports:
       - "8883:8883"
     volumes:
@@ -54,3 +58,6 @@ services:
 volumes:
   postgres-data:
   mosquitto-data:
+
+networks:
+  default: {}

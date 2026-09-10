@@ -50,11 +50,10 @@ class MqttBridge:
                     tls_context=self._tls_context(),
                 ) as client:
                     self.client = client
-                    async with client.messages() as messages:
-                        await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/telemetry")
-                        await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/status")
-                        async for message in messages:
-                            await self._handle(message.topic.value, bytes(message.payload))
+                    await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/telemetry")
+                    await client.subscribe(f"{self.settings.mqtt_topic_prefix}/edge/+/status")
+                    async for message in client.messages:
+                        await self._handle(message.topic.value, bytes(message.payload))
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
