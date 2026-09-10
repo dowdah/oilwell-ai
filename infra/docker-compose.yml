@@ -17,6 +17,7 @@ services:
     mem_limit: 512m
 
   api:
+    image: oilwell-ai-api:latest
     build: ../apps/api
     restart: unless-stopped
     env_file: ${ENV_FILE:-../.env}
@@ -43,6 +44,7 @@ services:
     mem_limit: 128m
 
   web:
+    image: oilwell-ai-web:latest
     build: ../apps/web
     restart: unless-stopped
     ports:
