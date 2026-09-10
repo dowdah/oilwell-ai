@@ -27,6 +27,8 @@ services:
         condition: service_started
     volumes:
       - ./certs:/run/secrets:ro
+    ports:
+      - "127.0.0.1:8000:8000"
     mem_limit: 512m
 
   mosquitto:
@@ -45,23 +47,9 @@ services:
   web:
     build: ../apps/web
     restart: unless-stopped
-    mem_limit: 128m
-
-  nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    depends_on:
-      - api
-      - web
     ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN}
-    volumes:
-      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - ./certs:/etc/nginx/certs:ro
-    mem_limit: 64m
+      - "127.0.0.1:8085:80"
+    mem_limit: 128m
 
 volumes:
   postgres-data:
