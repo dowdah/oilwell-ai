@@ -17,7 +17,15 @@ from uuid import uuid4
 from .config import Settings
 
 DISCLAIMER = "仅教学辅助，不构成操作指令；不得据此执行现场控制或修改报警状态。"
-KB_PATH = Path(__file__).resolve().parents[3] / "docs" / "knowledge-base" / "manifest.json"
+_CONTAINER_KB_PATH = Path("/app/knowledge-base/manifest.json")
+_MODULE_PATH = Path(__file__).resolve()
+_SOURCE_KB_PATH = (
+    _MODULE_PATH.parents[3] / "docs" / "knowledge-base" / "manifest.json"
+    if len(_MODULE_PATH.parents) > 3 else _CONTAINER_KB_PATH
+)
+# Production images package the reviewed manifest beside the application, while
+# source-tree tests and local development continue to read the repository copy.
+KB_PATH = _CONTAINER_KB_PATH if _CONTAINER_KB_PATH.is_file() else _SOURCE_KB_PATH
 
 
 class InferenceSummary(Protocol):
