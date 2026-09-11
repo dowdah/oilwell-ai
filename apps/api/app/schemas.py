@@ -37,3 +37,10 @@ class ReplayCommand(BaseModel):
     command: Literal["START", "STOP", "PAUSE", "SET_SPEED", "LOAD_INSTANCE"]
     speed: Literal[1, 5, 10, 20] | None = None
     instance: str | None = Field(default=None, max_length=256)
+
+
+class DiagnosticRequest(BaseModel):
+    """Only a persisted inference may enter the diagnostic boundary."""
+
+    model_config = ConfigDict(extra="forbid")
+    inference_id: int = Field(gt=0)

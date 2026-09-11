@@ -15,6 +15,7 @@
 - **边缘端**：Pi 4B 以批处理方式读取 Parquet，支持 1×、5×、10×、20× 回放、心跳和云端控制。
 - **云端**：针对 2 vCPU / 2 GiB ECS 的轻量 Docker Compose（Nginx、API、PostgreSQL、Mosquitto）。训练与完整原始数据不进入 ECS。
 - **模型路线**：MVP 后在 Mac 上完成 Isolation Forest、XGBoost、TCN；云端仅加载推理制品。
+- **辅助诊断**：只读取持久化的 active/shadow 模型结果、离线特征贡献摘要和审阅后的公开资料；不读取完整原始时序、不发控制命令，也不改变报警状态机。
 
 ## 数据契约
 

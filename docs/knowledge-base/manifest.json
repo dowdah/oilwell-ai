@@ -1,0 +1,36 @@
+{
+  "version": "phase-4-kb-2026-09-11",
+  "governance": {
+    "purpose": "公开、可引用的教学辅助资料；不含任何现场参数、原始遥测、凭据或操作规程。",
+    "review_rule": "新增资料必须记录来源、版本、许可、分段与检索评估；仅允许人工审阅后合入。"
+  },
+  "documents": [
+    {
+      "id": "petrobras-3w-readme",
+      "title": "Petrobras 3W Dataset documentation",
+      "url": "https://github.com/petrobras/3W",
+      "version": "repository main, reviewed 2026-09-11",
+      "license": "CC BY 4.0 for dataset files; repository terms apply to documentation",
+      "tags": ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line", "3W", "dataset"],
+      "excerpt": "3W is a public benchmark of labelled multivariate time-series instances for undesirable oil-well events. Labels are teaching and evaluation evidence, not an operating procedure."
+    },
+    {
+      "id": "doe-flow-assurance",
+      "title": "U.S. DOE: Oil and Gas Technologies supplemental information",
+      "url": "https://www.energy.gov/documents/ch7-si-oil-and-gas-technologiespdf",
+      "version": "2015 report, reviewed 2026-09-11",
+      "license": "U.S. government work; verify reuse conditions before redistribution",
+      "tags": ["Flow Instability", "Hydrate in Service Line", "flow assurance", "teaching"],
+      "excerpt": "Flow assurance concerns uninterrupted hydrocarbon production and identifies several phenomena, including hydrate formation, as possible impediments. This broad context cannot identify a field cause from a model result alone."
+    },
+    {
+      "id": "phase-3-runbook",
+      "title": "OilWell AI Phase 3 shadow inference runbook",
+      "url": "https://github.com/dowdah/oilwell-ai/blob/main/docs/phase-3-demo-runbook.md",
+      "version": "repository commit aa997f3",
+      "license": "MIT",
+      "tags": ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line", "shadow", "XGBoost", "TCN"],
+      "excerpt": "The active XGBoost result is the only alarm source. TCN runs in shadow mode for comparison and must not change Alarm or AlarmState."
+    }
+  ]
+}

@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import ReplayCommand, TelemetryIn
+from app.schemas import DiagnosticRequest, ReplayCommand, TelemetryIn
 
 
 def valid_packet() -> dict:
@@ -36,3 +36,9 @@ def test_replay_speed_is_constrained() -> None:
     assert ReplayCommand(command="SET_SPEED", speed=20).speed == 20
     with pytest.raises(ValidationError):
         ReplayCommand(command="SET_SPEED", speed=7)
+
+
+def test_diagnostic_request_accepts_only_a_persisted_inference_id() -> None:
+    assert DiagnosticRequest(inference_id=1).inference_id == 1
+    with pytest.raises(ValidationError):
+        DiagnosticRequest.model_validate({"inference_id": 1, "measurements": {"raw": "forbidden"}})

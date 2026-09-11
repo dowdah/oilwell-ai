@@ -3,6 +3,7 @@ const navigation = [
   { to: '/', label: '总览', icon: '◉' },
   { to: '/monitor', label: '实时监测', icon: '⌁' },
   { to: '/models', label: '模型中心', icon: '◈' },
+  { to: '/diagnostics', label: '辅助诊断', icon: '⌘' },
   { to: '/alarms', label: '报警中心', icon: '!' },
   { to: '/edge', label: '边缘与回放', icon: '↗' },
 ]

@@ -92,3 +92,22 @@ class InferenceResult(Base):
     feature_schema_version: Mapped[str | None] = mapped_column(String(80))
     inference_latency_ms: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class DiagnosticRecord(Base):
+    """Auditable, non-operational explanation generated from an inference row."""
+
+    __tablename__ = "diagnostic_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    well_id: Mapped[str] = mapped_column(ForeignKey("wells.id"), index=True)
+    inference_id: Mapped[int] = mapped_column(ForeignKey("inference_results.id"), index=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    model_version: Mapped[str | None] = mapped_column(String(80))
+    knowledge_base_version: Mapped[str] = mapped_column(String(80))
+    explanation_version: Mapped[str | None] = mapped_column(String(80))
+    content: Mapped[str] = mapped_column(Text)
+    citations: Mapped[list] = mapped_column(JSONB, default=list)
+    input_summary: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

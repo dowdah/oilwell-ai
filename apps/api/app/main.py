@@ -8,15 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import get_settings
 from .database import Base, engine, get_session
 from .inference import InferenceRuntime
-from .models import Alarm, EdgeDevice, InferenceResult, Telemetry, Well
+from .diagnostics import ControlledDiagnosticService
+from .models import Alarm, DiagnosticRecord, EdgeDevice, InferenceResult, Telemetry, Well
 from .mqtt import MqttBridge
 from .realtime import hub
-from .schemas import DeviceStatusIn, ReplayCommand, TelemetryIn
+from .schemas import DeviceStatusIn, DiagnosticRequest, ReplayCommand, TelemetryIn
 from .services import acknowledge_alarm, inference_view, persist_inferences, process_device_status, process_telemetry
 
 settings = get_settings()
 inference_runtime = InferenceRuntime(settings)
 bridge = MqttBridge(settings, inference_runtime)
+diagnostic_service = ControlledDiagnosticService(settings)
 
 
 @asynccontextmanager
@@ -43,6 +45,16 @@ app = FastAPI(title="OilWell AI API", version="0.1.0", lifespan=lifespan)
 
 def alarm_view(row: Alarm) -> dict:
     return {"id": row.id, "well_id": row.well_id, "telemetry_id": row.telemetry_id, "severity": row.severity, "event_type": row.event_type, "status": row.status, "message": row.message, "raised_at": row.raised_at, "acknowledged_at": row.acknowledged_at}
+
+
+def diagnostic_view(row: DiagnosticRecord) -> dict:
+    return {
+        "id": row.id, "request_id": row.request_id, "well_id": row.well_id,
+        "inference_id": row.inference_id, "status": row.status,
+        "model_version": row.model_version, "knowledge_base_version": row.knowledge_base_version,
+        "explanation_version": row.explanation_version, "content": row.content,
+        "citations": row.citations, "input_summary": row.input_summary, "created_at": row.created_at,
+    }
 
 
 @app.get("/api/health")
@@ -147,6 +159,41 @@ async def latest_comparison(well_id: str, session: AsyncSession = Depends(get_se
         raise HTTPException(404, "no inference result for well")
     rows = (await session.scalars(select(InferenceResult).where(InferenceResult.well_id == well_id, InferenceResult.telemetry_id == latest).order_by(InferenceResult.model_mode))).all()
     return [inference_view(row) for row in rows]
+
+
+@app.post("/api/wells/{well_id}/diagnostics", status_code=201)
+async def create_diagnostic(
+    well_id: str, request: DiagnosticRequest, session: AsyncSession = Depends(get_session)
+) -> dict:
+    """Create an auditable teaching diagnostic from a selected active inference only."""
+    inference = await session.get(InferenceResult, request.inference_id)
+    if inference is None or inference.well_id != well_id:
+        raise HTTPException(404, "inference result not found for well")
+    comparison = (await session.scalars(
+        select(InferenceResult).where(InferenceResult.well_id == well_id, InferenceResult.telemetry_id == inference.telemetry_id)
+    )).all()
+    output = diagnostic_service.diagnose(inference, comparison)
+    record = DiagnosticRecord(
+        well_id=well_id, inference_id=inference.id, request_id=output.request_id,
+        status=output.status, model_version=inference.model_version,
+        knowledge_base_version=output.knowledge_base_version, explanation_version=output.explanation_version,
+        content=output.content, citations=output.citations, input_summary=output.input_summary,
+    )
+    session.add(record)
+    await session.commit()
+    await session.refresh(record)
+    return diagnostic_view(record)
+
+
+@app.get("/api/wells/{well_id}/diagnostics")
+async def diagnostic_history(well_id: str, limit: int = 20, session: AsyncSession = Depends(get_session)) -> list[dict]:
+    if not 1 <= limit <= 100:
+        raise HTTPException(422, "limit must be between 1 and 100")
+    rows = (await session.scalars(
+        select(DiagnosticRecord).where(DiagnosticRecord.well_id == well_id)
+        .order_by(desc(DiagnosticRecord.id)).limit(limit)
+    )).all()
+    return [diagnostic_view(row) for row in rows]
 
 
 @app.get("/api/alarms")

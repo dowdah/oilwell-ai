@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     inference_anomaly_threshold: float = 0.50
     inference_confirmation_windows: int = 2
     inference_recovery_windows: int = 3
+    # Phase 4 is intentionally read-only: explanation artifacts and the curated
+    # knowledge base are loaded from files, never from telemetry or the broker.
+    explainability_dir: Path = Path("/models/explanations")
+    diagnostic_min_confidence: float = 0.60
+    diagnostic_max_sources: int = 3
 
 
 @lru_cache
