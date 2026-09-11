@@ -45,7 +45,10 @@ services:
         aliases:
           - ${APP_DOMAIN}
     ports:
-      - "8883:8883"
+      # MQTT is reachable only from the WireGuard/private-overlay address.
+      # Never substitute 0.0.0.0 here: Pi clients preserve TLS hostname
+      # validation through MQTT_HOST while routing to this private address.
+      - "${MQTT_BIND_IP:?set MQTT_BIND_IP}:8883:8883"
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ./mosquitto/acl:/mosquitto/config/acl:ro

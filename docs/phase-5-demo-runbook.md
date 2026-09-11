@@ -49,3 +49,4 @@ API 测试涵盖五个受控案例：Normal、Severe Slugging、Flow Instability
 - 知识条目不合格时移除条目、生成拒答记录并恢复已审阅 manifest；不得临时绕过引用要求。
 - TCN 不能载入、指标不足或延迟不合格时，仅将其维持在 `shadow / unavailable`，active XGBoost、报警状态机和诊断边界不变。
 - 发布前记录镜像/模型/知识库版本与 Git commit；如需回退，部署上一条已验证的主分支提交及其同版本只读制品。
+- 完整回归通过且 Git 工作树干净后，运行 `python scripts/capture_release_manifest.py --output docs/.local/phase-5/release/manifest.json --image api=<digest> --image web=<digest>`。该清单仅存储提交、镜像摘要、制品文件哈希、模型指标和知识库/解释版本；不得加入地址、凭据、原始遥测或模型二进制文件。

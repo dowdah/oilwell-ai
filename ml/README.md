@@ -41,3 +41,19 @@ python ml/scripts/train_tcn.py docs/experiments/3w-instance-selection.json \
 ```
 
 脚本流式读取 Parquet，每个时刻只保留一个 180 行窗口；标准化参数只由训练组拟合。它写入 Git 忽略的 `tcn_model.pt`、`tcn_config.json`、`scaler.json`、`model_metadata.json` 与 `comparison.json`。Compose 会将此目录以只读方式挂载到 `/models/shadow`；重启 API 后可通过“模型中心”确认 `shadow / ready`。TCN 不参与报警和控制。
+
+## 第四、五阶段：离线解释制品
+
+为四个课程演示类别生成与实际回放时间戳一致的私有特征窗口，再生成仅包含贡献排名和趋势摘要的解释 manifest：
+
+```bash
+python ml/scripts/prepare_demo_windows.py docs/experiments/3w-instance-selection.json \
+  --data-root /absolute/path/to/3w-parquet \
+  --output ml/data/raw/phase-5-demo-windows.json
+python ml/scripts/generate_explanations.py \
+  --model-dir ml/artifacts/current \
+  --windows-json ml/data/raw/phase-5-demo-windows.json \
+  --output ml/artifacts/explanations/explanation_manifest.json
+```
+
+`phase-5-demo-windows.json` 不可提交；课程审阅人必须在发布记录中确认四个窗口的趋势摘要和引用。API 只读取最终的只读 `explanation_manifest.json`，不会接受遥测或特征值作为诊断输入。
