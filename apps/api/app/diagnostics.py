@@ -100,6 +100,8 @@ class DiagnosticOutput:
     input_summary: dict[str, Any]
     knowledge_base_version: str
     explanation_version: str | None
+    evidence_status: str
+    degradation_reasons: list[str]
 
 
 class ControlledDiagnosticService:
@@ -132,9 +134,13 @@ class ControlledDiagnosticService:
         source_lines = "；".join(f"[{item.id}] {item.title}" for item in sources)
         evidence = "未找到同窗口的离线 SHAP 摘要，不能推断特征贡献。"
         explanation_version = None
+        evidence_status = "degraded"
+        degradation_reasons = ["未找到同窗口的离线 SHAP 摘要；未推断特征贡献。"]
         if explanation:
             evidence = f"同窗口离线特征贡献：{', '.join(explanation['top_features'])}。趋势摘要：{explanation['trend_summary']}"
             explanation_version = explanation.get("version")
+            evidence_status = "complete"
+            degradation_reasons = []
         shadow = next((row for row in comparison if row.model_mode == "shadow"), None)
         contrast = "未提供 shadow 对照结果。" if shadow is None else (
             f"Shadow {shadow.model_type} 结论为 {shadow.predicted_class or shadow.status}"
@@ -147,11 +153,18 @@ class ControlledDiagnosticService:
             "该说明只描述模型证据与公开资料，未包含完整原始时序、现场参数或控制建议。" + DISCLAIMER
         )
         citations = [{"id": item.id, "title": item.title, "url": item.url, "version": item.version, "license": item.license} for item in sources]
-        return DiagnosticOutput(request_id, "completed", content, citations, summary, self.knowledge_base.version, explanation_version)
+        return DiagnosticOutput(
+            request_id, "completed", content, citations, summary,
+            self.knowledge_base.version, explanation_version,
+            evidence_status, degradation_reasons,
+        )
 
     @staticmethod
     def _percentage(value: float | None) -> str:
         return "未知" if value is None else f"{value:.1%}"
 
     def _refusal(self, request_id: str, summary: dict[str, Any], reason: str) -> DiagnosticOutput:
-        return DiagnosticOutput(request_id, "refused", f"{reason}{DISCLAIMER}", [], summary, self.knowledge_base.version, None)
+        return DiagnosticOutput(
+            request_id, "refused", f"{reason}{DISCLAIMER}", [], summary,
+            self.knowledge_base.version, None, "refused", [reason],
+        )

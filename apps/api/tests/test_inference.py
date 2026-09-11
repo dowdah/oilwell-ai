@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from app.config import Settings
 import json
@@ -62,9 +63,10 @@ def test_metadata_rejects_wrong_feature_contract() -> None:
 
 def test_tcn_adapter_loads_a_shadow_artifact_and_keeps_its_mode(tmp_path) -> None:
     import sys
-    import torch
+    import pytest
+    torch = pytest.importorskip("torch", reason="TCN artifact validation requires the optional serving dependency")
 
-    sys.path.insert(0, "ml")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "ml"))
     from oilwell_ml.tcn import TCNConfig, build_tcn
     from oilwell_ml.tcn_data import StandardScaler
 

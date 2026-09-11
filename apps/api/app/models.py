@@ -110,4 +110,8 @@ class DiagnosticRecord(Base):
     content: Mapped[str] = mapped_column(Text)
     citations: Mapped[list] = mapped_column(JSONB, default=list)
     input_summary: Mapped[dict] = mapped_column(JSONB, default=dict)
+    # Phase 5 audit data: a diagnostic may be safe to show while its offline
+    # explanation evidence is unavailable. Persist that distinction explicitly.
+    evidence_status: Mapped[str] = mapped_column(String(16), default="complete", index=True)
+    degradation_reasons: Mapped[list] = mapped_column(JSONB, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

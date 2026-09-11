@@ -2,8 +2,10 @@ from datetime import UTC, datetime, timedelta
 from dataclasses import dataclass
 import json
 
+import pytest
+
 from app.config import Settings
-from app.diagnostics import ControlledDiagnosticService
+from app.diagnostics import ControlledDiagnosticService, KnowledgeBase
 
 
 @dataclass
@@ -52,6 +54,8 @@ def test_completed_diagnosis_has_sources_disclaimer_and_no_raw_telemetry(tmp_pat
     assert output.citations and "仅教学辅助，不构成操作指令" in output.content
     assert "measurements" not in json.dumps(output.input_summary)
     assert output.explanation_version == "explain-v1"
+    assert output.evidence_status == "complete"
+    assert output.degradation_reasons == []
 
 
 def test_low_confidence_refuses_without_sources_or_explanation(tmp_path) -> None:
@@ -59,9 +63,42 @@ def test_low_confidence_refuses_without_sources_or_explanation(tmp_path) -> None
     assert output.status == "refused"
     assert output.citations == []
     assert "置信度不足" in output.content
+    assert output.evidence_status == "refused"
+    assert output.degradation_reasons == ["模型置信度不足，诊断服务拒绝给出事件解释。"]
 
 
 def test_shadow_result_cannot_be_explained_as_active(tmp_path) -> None:
     output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(model_mode="shadow"), [])
     assert output.status == "refused"
     assert "active" in output.content
+
+
+def test_missing_explanation_is_audited_safe_degradation(tmp_path) -> None:
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(), [])
+    assert output.status == "completed"
+    assert output.evidence_status == "degraded"
+    assert output.explanation_version is None
+    assert output.degradation_reasons == ["未找到同窗口的离线 SHAP 摘要；未推断特征贡献。"]
+    assert "不能推断特征贡献" in output.content
+
+
+@pytest.mark.parametrize("event", ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line"])
+def test_each_target_class_has_a_citable_diagnostic(event, tmp_path) -> None:
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(
+        result(predicted_class=event), []
+    )
+    assert output.status == "completed"
+    assert output.citations
+    assert f"模型将该窗口分类为“{event}”" in output.content
+
+
+def test_missing_knowledge_entry_refuses_and_records_its_reason(tmp_path) -> None:
+    manifest = tmp_path / "empty-knowledge-base.json"
+    manifest.write_text(json.dumps({"version": "test-empty", "documents": []}), encoding="utf-8")
+    service = ControlledDiagnosticService(
+        Settings(explainability_dir=tmp_path), KnowledgeBase(manifest)
+    )
+    output = service.diagnose(result(), [])
+    assert output.status == "refused"
+    assert output.evidence_status == "refused"
+    assert output.degradation_reasons == ["知识库没有可引用的公开资料，诊断服务拒答。"]

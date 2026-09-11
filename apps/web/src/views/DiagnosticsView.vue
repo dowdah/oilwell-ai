@@ -44,7 +44,7 @@ onMounted(initialLoad)
     <section v-for="record in records" :key="record.id" class="panel diagnostic-record">
       <div class="panel-head"><h3>{{ record.status === 'completed' ? '诊断记录' : '拒答记录' }}</h3><span>{{ record.created_at }}</span></div>
       <p>{{ record.content }}</p>
-      <dl class="model-details"><dt>请求 ID</dt><dd>{{ record.request_id }}</dd><dt>模型 / 知识库</dt><dd>{{ record.model_version ?? '—' }} / {{ record.knowledge_base_version }}</dd><dt>解释制品</dt><dd>{{ record.explanation_version ?? '同窗口摘要不可用' }}</dd></dl>
+      <dl class="model-details"><dt>请求 ID</dt><dd>{{ record.request_id }}</dd><dt>模型 / 知识库</dt><dd>{{ record.model_version ?? '—' }} / {{ record.knowledge_base_version }}</dd><dt>证据状态</dt><dd>{{ record.evidence_status === 'complete' ? '完整' : record.evidence_status === 'degraded' ? '安全降级' : '拒答' }}</dd><dt>解释制品</dt><dd>{{ record.explanation_version ?? '同窗口摘要不可用' }}</dd><dt v-if="record.degradation_reasons.length">降级/拒答原因</dt><dd v-if="record.degradation_reasons.length">{{ record.degradation_reasons.join('；') }}</dd></dl>
       <div v-if="record.citations.length" class="citations"><h4>可追溯资料</h4><a v-for="citation in record.citations" :key="citation.id" :href="citation.url" target="_blank" rel="noreferrer">[{{ citation.id }}] {{ citation.title }} <small>{{ citation.version }} · {{ citation.license }}</small></a></div>
     </section>
     <section v-if="!records.length" class="panel empty">选择有完整窗口的油井后可生成第一条受控诊断。</section>

@@ -83,7 +83,10 @@ class TCNAdapter(ModelAdapter):
             from oilwell_ml.tcn import TCNConfig, build_tcn
             from oilwell_ml.tcn_data import StandardScaler
         except ModuleNotFoundError:
-            ml_root = str(Path(__file__).resolve().parents[2] / "ml")
+            # Source-tree execution starts under apps/api; the shared training
+            # package is at the repository root, while the image copies it into
+            # /app. Keep both execution modes on the same implementation.
+            ml_root = str(Path(__file__).resolve().parents[3] / "ml")
             if ml_root not in sys.path:
                 sys.path.insert(0, ml_root)
             from oilwell_ml.tcn import TCNConfig, build_tcn

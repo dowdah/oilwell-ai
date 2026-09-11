@@ -21,7 +21,8 @@ export type Citation = { id: string; title: string; url: string; version: string
 export type Diagnostic = {
   id: number; request_id: string; well_id: string; inference_id: number; status: 'completed' | 'refused'
   model_version: string | null; knowledge_base_version: string; explanation_version: string | null
-  content: string; citations: Citation[]; input_summary: Record<string, unknown>; created_at: string
+  content: string; citations: Citation[]; input_summary: Record<string, unknown>
+  evidence_status: 'complete' | 'degraded' | 'refused'; degradation_reasons: string[]; created_at: string
 }
 
 export const getDashboard = () => api.get<{ wells: number; online_devices: number; active_alarms: number }>('/dashboard').then((r) => r.data)

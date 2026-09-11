@@ -33,6 +33,8 @@ async def lifespan(_: FastAPI):
             await conn.execute(text("ALTER TABLE inference_results ADD COLUMN IF NOT EXISTS model_mode VARCHAR(16) NOT NULL DEFAULT 'active'"))
             await conn.execute(text("ALTER TABLE inference_results DROP CONSTRAINT IF EXISTS uq_inference_telemetry_model_mode"))
             await conn.execute(text("ALTER TABLE inference_results ADD CONSTRAINT uq_inference_telemetry_model_mode UNIQUE (telemetry_id, model_mode)"))
+            await conn.execute(text("ALTER TABLE diagnostic_records ADD COLUMN IF NOT EXISTS evidence_status VARCHAR(16) NOT NULL DEFAULT 'complete'"))
+            await conn.execute(text("ALTER TABLE diagnostic_records ADD COLUMN IF NOT EXISTS degradation_reasons JSONB NOT NULL DEFAULT '[]'::jsonb"))
     inference_runtime.load()
     await bridge.start()
     yield
@@ -53,7 +55,9 @@ def diagnostic_view(row: DiagnosticRecord) -> dict:
         "inference_id": row.inference_id, "status": row.status,
         "model_version": row.model_version, "knowledge_base_version": row.knowledge_base_version,
         "explanation_version": row.explanation_version, "content": row.content,
-        "citations": row.citations, "input_summary": row.input_summary, "created_at": row.created_at,
+        "citations": row.citations, "input_summary": row.input_summary,
+        "evidence_status": row.evidence_status, "degradation_reasons": row.degradation_reasons,
+        "created_at": row.created_at,
     }
 
 
@@ -178,6 +182,7 @@ async def create_diagnostic(
         status=output.status, model_version=inference.model_version,
         knowledge_base_version=output.knowledge_base_version, explanation_version=output.explanation_version,
         content=output.content, citations=output.citations, input_summary=output.input_summary,
+        evidence_status=output.evidence_status, degradation_reasons=output.degradation_reasons,
     )
     session.add(record)
     await session.commit()
