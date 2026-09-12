@@ -3,7 +3,8 @@ FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 COPY apps/api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install pip==26.2.1 && pip install --retries 5 --resume-retries 5 -r requirements.txt
 COPY apps/api/app ./app
 # TCN serving uses the same architecture and scaler contract as Mac training.
 COPY ml/oilwell_ml ./oilwell_ml

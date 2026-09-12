@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { createDiagnostic, getDiagnostics, getLatestComparison, getWells, type Diagnostic, type Inference } from '../api'
 
 const wells = ref<{ id: string; display_name: string }[]>([])
@@ -8,24 +8,31 @@ const comparison = ref<Inference[]>([])
 const records = ref<Diagnostic[]>([])
 const busy = ref(false)
 const error = ref('')
+const readyMs = ref<number | null>(null), historyMs = ref<number | null>(null), postMs = ref<number | null>(null)
 const active = computed(() => comparison.value.find((item) => item.model_mode === 'active'))
 
 async function load() {
   if (!selected.value) return
+  performance.clearMarks('oilwell:diagnostics-ready')
   try {
-    const [latest, history] = await Promise.all([getLatestComparison(selected.value), getDiagnostics(selected.value)])
+    const historyStarted = performance.now()
+    const historyRequest = getDiagnostics(selected.value).then((value) => { historyMs.value = performance.now() - historyStarted; return value })
+    const [latest, history] = await Promise.all([getLatestComparison(selected.value), historyRequest])
     comparison.value = latest; records.value = history; error.value = ''
   } catch { comparison.value = []; records.value = []; error.value = '暂无可用完整窗口或诊断记录。' }
+  await nextTick()
+  requestAnimationFrame(() => requestAnimationFrame(() => { performance.mark('oilwell:diagnostics-ready'); readyMs.value ??= performance.now() }))
 }
 async function generate() {
   if (!selected.value || !active.value) return
   busy.value = true; error.value = ''
+  const started = performance.now()
   try { records.value.unshift(await createDiagnostic(selected.value, active.value.id)) }
   catch { error.value = '生成诊断失败，请确认 API 与已选 active 推理结果可用。' }
-  finally { busy.value = false }
+  finally { postMs.value = performance.now() - started; busy.value = false }
 }
 async function initialLoad() {
-  try { wells.value = await getWells(); selected.value ||= wells.value[0]?.id ?? ''; await load() }
+  try { wells.value = await getWells(); selected.value ||= wells.value[0]?.id ?? '' }
   catch { error.value = '无法读取油井列表。请确认 API 已启动。' }
 }
 watch(selected, load)
@@ -33,7 +40,7 @@ onMounted(initialLoad)
 </script>
 
 <template>
-  <div class="view">
+  <div class="view" :data-first-interactive-ms="readyMs" :data-history-request-ms="historyMs" :data-diagnostic-request-ms="postMs">
     <div class="view-title"><div><h2>辅助诊断</h2><p>只使用已验证的模型结果、离线解释摘要和已审阅公开资料。</p></div><button class="secondary" @click="load">刷新</button></div>
     <p v-if="error" class="hint">{{ error }}</p>
     <section class="panel diagnostic-controls">

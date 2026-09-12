@@ -27,7 +27,7 @@ export type Diagnostic = {
 
 export const getDashboard = () => api.get<{ wells: number; online_devices: number; active_alarms: number }>('/dashboard').then((r) => r.data)
 export const getWells = () => api.get<{ id: string; display_name: string }[]>('/wells').then((r) => r.data)
-export const getHistory = (wellId: string) => api.get<Telemetry[]>(`/wells/${wellId}/telemetry`).then((r) => r.data)
+export const getHistory = (wellId: string, params: Record<string, unknown> = {}) => api.get<Telemetry[]>(`/wells/${wellId}/telemetry`, { params }).then((r) => r.data)
 export const getLatestInference = (wellId: string) => api.get<Inference>(`/wells/${wellId}/inference/latest`).then((r) => r.data)
 export const getLatestComparison = (wellId: string) => api.get<Inference[]>(`/wells/${wellId}/inference/comparison/latest`).then((r) => r.data)
 export const createDiagnostic = (wellId: string, inferenceId: number) => api.post<Diagnostic>(`/wells/${wellId}/diagnostics`, { inference_id: inferenceId }).then((r) => r.data)
@@ -37,3 +37,5 @@ export const getAlarms = () => api.get<Alarm[]>('/alarms').then((r) => r.data)
 export const acknowledge = (id: number) => api.post<Alarm>(`/alarms/${id}/acknowledge`).then((r) => r.data)
 export const getDevices = () => api.get<Device[]>('/edge-devices').then((r) => r.data)
 export const command = (deviceId: string, payload: Record<string, unknown>) => api.post(`/replay/${deviceId}/commands`, payload).then((r) => r.data)
+
+export const getInferenceHistory = (wellId: string, params: Record<string, unknown> = {}) => api.get<Inference[]>(`/wells/${wellId}/inference`, { params }).then((r) => r.data)

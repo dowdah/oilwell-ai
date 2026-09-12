@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
+import math
 
 import pyarrow.parquet as pq
 
@@ -24,7 +25,7 @@ def _source_column(available: set[str], candidates: tuple[str, ...]) -> str | No
 def _timestamp(value: object) -> str:
     if isinstance(value, datetime):
         return (value if value.tzinfo else value.replace(tzinfo=timezone.utc)).isoformat()
-    return str(value) if value is not None else datetime.now(timezone.utc).isoformat()
+    raise ValueError("replay requires a source datetime timestamp")
 
 
 class ParquetReplay:
@@ -42,12 +43,16 @@ class ParquetReplay:
         if missing:
             raise ValueError(f"{self.path.name} is missing required variables: {', '.join(missing)}")
         timestamp_column = _source_column(available, TIMESTAMP_COLUMNS)
+        if timestamp_column is None:
+            raise ValueError(f"{self.path.name} requires a source timestamp column")
         event_column = _source_column(available, EVENT_COLUMNS)
         columns = [source for source in mapping.values() if source] + ([timestamp_column] if timestamp_column else []) + ([event_column] if event_column else [])
         for batch in parquet.iter_batches(batch_size=self.batch_size, columns=columns):
             for row in batch.to_pylist():
+                if any(row[source] is None or not math.isfinite(float(row[source])) for source in mapping.values()):
+                    raise ValueError(f"{self.path.name} contains missing or nonfinite measurements")
                 yield {
-                    "timestamp": _timestamp(row.get(timestamp_column)) if timestamp_column else datetime.now(timezone.utc).isoformat(),
-                    "measurements": {target: float(row[source]) for target, source in mapping.items() if row[source] is not None},
+                    "timestamp": _timestamp(row.get(timestamp_column)),
+                    "measurements": {target: float(row[source]) for target, source in mapping.items()},
                     "event_hint": str(row[event_column]) if event_column and row.get(event_column) is not None else None,
                 }

@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import AlarmsView from './views/AlarmsView.vue'
-import DashboardView from './views/DashboardView.vue'
-import DiagnosticsView from './views/DiagnosticsView.vue'
-import EdgeView from './views/EdgeView.vue'
-import MonitorView from './views/MonitorView.vue'
-import ModelCenterView from './views/ModelCenterView.vue'
+const AlarmsView = () => import('./views/AlarmsView.vue')
+const DashboardView = () => import('./views/DashboardView.vue')
+const DiagnosticsView = () => import('./views/DiagnosticsView.vue')
+const EdgeView = () => import('./views/EdgeView.vue')
+const MonitorView = () => import('./views/MonitorView.vue')
+const ModelCenterView = () => import('./views/ModelCenterView.vue')
+
+const HistoryView = () => import('./views/HistoryView.vue')
 
 export default createRouter({
   history: createWebHistory(),
@@ -15,5 +17,6 @@ export default createRouter({
     { path: '/diagnostics', component: DiagnosticsView },
     { path: '/alarms', component: AlarmsView },
     { path: '/edge', component: EdgeView },
+    { path: '/history', component: HistoryView },
   ],
 })

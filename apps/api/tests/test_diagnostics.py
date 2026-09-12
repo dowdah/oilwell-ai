@@ -44,7 +44,7 @@ def test_completed_diagnosis_has_sources_disclaimer_and_no_raw_telemetry(tmp_pat
         "version": "explain-v1", "model_version": "xgb-v4",
         "feature_schema_version": "3w-7v-window-stats-v1",
         "window_summaries": [{
-            "window_start": active.window_start.isoformat(), "window_end": active.window_end.isoformat(),
+            "well_id": active.well_id, "window_start": active.window_start.isoformat(), "window_end": active.window_end.isoformat(),
             "top_features": ["P_PDG__slope", "QGL__last"], "trend_summary": "离线复核的趋势摘要。",
         }],
     }
@@ -102,3 +102,34 @@ def test_missing_knowledge_entry_refuses_and_records_its_reason(tmp_path) -> Non
     assert output.status == "refused"
     assert output.evidence_status == "refused"
     assert output.degradation_reasons == ["知识库没有可引用的公开资料，诊断服务拒答。"]
+
+
+def test_unknown_class_cannot_receive_irrelevant_generic_citations(tmp_path):
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(predicted_class='Unknown'), [])
+    assert output.evidence_status == 'refused'
+    assert output.citations == []
+
+
+def test_unrelated_knowledge_does_not_count_as_event_coverage(tmp_path):
+    path = tmp_path / 'knowledge.json'
+    path.write_text(json.dumps({'version':'test', 'documents':[{'id':'unrelated','title':'Astronomy','url':'https://example.org','version':'1','license':'test','tags':['stars'],'excerpt':'Stars emit light.'}]}))
+    kb = KnowledgeBase(path)
+    assert kb.retrieve('Severe Slugging', 3) == []
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path), kb).diagnose(result(), [])
+    assert output.evidence_status == 'refused'
+
+
+def test_shap_window_from_a_different_well_is_not_reused(tmp_path):
+    active = result()
+    manifest = {'version':'explain-v1', 'model_version':'xgb-v4', 'feature_schema_version':active.feature_schema_version,
+        'window_summaries':[{'well_id':'another-well','window_start':active.window_start.isoformat(),'window_end':active.window_end.isoformat(),'top_features':['QGL__mean'],'trend_summary':'Unrelated window'}]}
+    (tmp_path / 'explanation_manifest.json').write_text(json.dumps(manifest))
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(active, [active])
+    assert output.evidence_status == 'degraded'
+    assert 'Unrelated window' not in output.content
+
+
+def test_corrupt_explanation_safely_degrades_instead_of_failing_request(tmp_path):
+    (tmp_path / 'explanation_manifest.json').write_text('{invalid')
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(), [])
+    assert output.evidence_status == 'degraded'

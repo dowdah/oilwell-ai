@@ -42,3 +42,19 @@ def test_diagnostic_request_accepts_only_a_persisted_inference_id() -> None:
     assert DiagnosticRequest(inference_id=1).inference_id == 1
     with pytest.raises(ValidationError):
         DiagnosticRequest.model_validate({"inference_id": 1, "measurements": {"raw": "forbidden"}})
+
+
+@pytest.mark.parametrize('value', [float('nan'), float('inf'), -float('inf')])
+def test_nonfinite_measurements_are_rejected_before_persistence(value):
+    data = valid_packet()
+    data['measurements']['QGL'] = value
+    with pytest.raises(ValidationError):
+        TelemetryIn.model_validate(data)
+
+
+def test_accelerated_replay_sequence_fits_bigint_and_javascript():
+    data = valid_packet()
+    data['sequence'] = 1_789_214_000_000_000
+    assert TelemetryIn.model_validate(data).sequence == data['sequence']
+    data['sequence'] = 2**53
+    with pytest.raises(ValidationError): TelemetryIn.model_validate(data)

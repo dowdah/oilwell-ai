@@ -3,6 +3,7 @@ from collections import deque
 from datetime import datetime
 
 from fastapi import WebSocket
+from fastapi.encoders import jsonable_encoder
 
 
 class RealtimeHub:
@@ -19,14 +20,16 @@ class RealtimeHub:
         self.clients.discard(websocket)
 
     def add_telemetry(self, payload: dict) -> None:
-        samples = self.windows.setdefault(payload["well_id"], deque())
+        samples = self.windows.setdefault(payload["well_id"], deque(maxlen=self.window_seconds))
+        if samples and datetime.fromisoformat(payload["timestamp"]) <= datetime.fromisoformat(samples[-1]["timestamp"]):
+            samples.clear()
         samples.append(payload)
         cutoff = datetime.fromisoformat(payload["timestamp"]).timestamp() - self.window_seconds
         while samples and datetime.fromisoformat(samples[0]["timestamp"]).timestamp() < cutoff:
             samples.popleft()
 
     async def broadcast(self, event: str, payload: dict) -> None:
-        message = {"event": event, "payload": payload}
+        message = jsonable_encoder({"event": event, "payload": payload})
         stale: list[WebSocket] = []
         for client in self.clients:
             try:

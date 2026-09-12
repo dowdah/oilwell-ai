@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class Measurements(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, allow_inf_nan=False, extra="forbid")
     p_pdg: float = Field(alias="P_PDG")
     p_tpt: float = Field(alias="P_TPT")
     t_tpt: float = Field(alias="T_TPT")
@@ -20,7 +20,7 @@ class TelemetryIn(BaseModel):
     device_id: str = Field(min_length=1, max_length=64)
     well_id: str = Field(min_length=1, max_length=64)
     timestamp: datetime
-    sequence: int = Field(ge=0)
+    sequence: int = Field(ge=0, le=9_007_199_254_740_991)
     measurements: Measurements
     event_hint: str | None = Field(default=None, max_length=80)
     extras: dict = Field(default_factory=dict)

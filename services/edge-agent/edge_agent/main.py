@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -9,6 +10,7 @@ import paho.mqtt.client as mqtt
 
 from .config import Settings
 from .replay import ParquetReplay
+from .sequence import SequenceAllocator
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -21,11 +23,12 @@ class ReplayController:
         self.running, self.paused = False, False
         self.speed = settings.replay_speed if settings.replay_speed in {1, 5, 10, 20} else 10
         self.instance = settings.replay_file
-        # PostgreSQL deduplicates telemetry by (device_id, sequence). Starting
-        # from a seconds-based epoch keeps the value within a signed INTEGER
-        # while making a recreated edge container continue with a fresh range
-        # instead of silently losing every replay row to old sequence values.
-        self.sequence = int(time.time())
+        # A persistent lease survives accelerated replay, fast restarts and
+        # backwards clock adjustment. Compose mounts this small state volume.
+        self.sequences = SequenceAllocator(settings.sequence_file)
+        self.sequence = self.sequences.value
+        self.generation = 0
+        self.last_command: dict = {}
         self.worker: threading.Thread | None = None
         self._autostart_pending = settings.replay_autostart
 
@@ -40,7 +43,7 @@ class ReplayController:
     def publish_status(self) -> None:
         with self.lock:
             status = "PAUSED" if self.paused else ("REPLAYING" if self.running else "ONLINE")
-            payload = {"device_id": self.settings.device_id, "timestamp": datetime.now(timezone.utc).isoformat(), "status": status, "metrics": {"speed": self.speed, "instance": self.instance, "sequence": self.sequence}}
+            payload = {"device_id": self.settings.device_id, "timestamp": datetime.now(timezone.utc).isoformat(), "status": status, "metrics": {"speed": self.speed, "instance": self.instance, "sequence": self.sequence, "last_command": self.last_command, "available_instances": sorted(str(path.relative_to(self.settings.data_dir)) for path in self.settings.data_dir.rglob("*.parquet"))}}
         self.client.publish(self.status_topic, json.dumps(payload), qos=1)
 
     def load_instance(self, instance: str) -> None:
@@ -61,19 +64,27 @@ class ReplayController:
                     raise ValueError("speed must be one of 1, 5, 10, 20")
                 self.speed = speed
             elif command == "LOAD_INSTANCE":
+                if self.running:
+                    raise ValueError("stop replay before loading another instance")
                 self.load_instance(str(payload.get("instance", "")))
             elif command == "PAUSE":
                 self.paused = True
             elif command == "STOP":
+                self.generation += 1
                 self.running, self.paused = False, False
             elif command == "START":
                 self.paused = False
                 if not self.running:
+                    if not self.instance:
+                        raise ValueError("load an instance before starting replay")
+                    self.load_instance(self.instance)
                     self.running = True
-                    self.worker = threading.Thread(target=self._replay, daemon=True)
+                    self.generation += 1
+                    self.worker = threading.Thread(target=self._replay, args=(self.generation,), daemon=True)
                     self.worker.start()
             else:
                 raise ValueError("unsupported command")
+            self.last_command = {"command_id": payload.get("command_id"), "command": command, "status": "applied", "timestamp": datetime.now(timezone.utc).isoformat()}
         self.publish_status()
 
     def start_configured_replay_once(self) -> None:
@@ -88,7 +99,7 @@ class ReplayController:
             return
         self.command({"command": "START"})
 
-    def _replay(self) -> None:
+    def _replay(self, generation: int) -> None:
         with self.lock:
             instance = self.instance
         if not instance:
@@ -102,16 +113,16 @@ class ReplayController:
             for row in ParquetReplay(path, self.settings.batch_size).rows():
                 while True:
                     with self.lock:
-                        active, paused, speed = self.running, self.paused, self.speed
+                        active, paused, speed = self.running and generation == self.generation, self.paused, self.speed
                     if not active:
                         return
                     if not paused:
                         break
                     time.sleep(0.2)
                 with self.lock:
-                    self.sequence += 1
+                    self.sequence = self.sequences.next()
                     sequence = self.sequence
-                payload = {"device_id": self.settings.device_id, "well_id": self.settings.well_id, "timestamp": row["timestamp"], "sequence": sequence, "measurements": row["measurements"]}
+                payload = {"device_id": self.settings.device_id, "well_id": (re.match(r"(WELL-\d+)_", Path(instance).name).group(1) if re.match(r"(WELL-\d+)_", Path(instance).name) else self.settings.well_id), "timestamp": row["timestamp"], "sequence": sequence, "measurements": row["measurements"]}
                 if row["event_hint"]:
                     payload["event_hint"] = row["event_hint"]
                 self.client.publish(self.telemetry_topic, json.dumps(payload), qos=1)
@@ -120,7 +131,8 @@ class ReplayController:
             logger.exception("Replay failed")
         finally:
             with self.lock:
-                self.running, self.paused = False, False
+                if generation == self.generation:
+                    self.running, self.paused = False, False
             self.publish_status()
 
 
@@ -131,6 +143,7 @@ def main() -> None:
         client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
     if settings.mqtt_tls:
         client.tls_set(ca_certs=settings.mqtt_ca_file)
+    client.max_queued_messages_set(256)
     controller = ReplayController(settings, client)
 
     def on_connect(_: mqtt.Client, __, ___, reason_code, ____):
@@ -142,8 +155,15 @@ def main() -> None:
     def on_message(_: mqtt.Client, __, message: mqtt.MQTTMessage):
         try:
             controller.command(json.loads(message.payload))
-        except (json.JSONDecodeError, ValueError):
-            logger.exception("Rejected command")
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning("Rejected command: %s", exc)
+            try:
+                payload = json.loads(message.payload)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                payload = {}
+            with controller.lock:
+                controller.last_command = {"command_id": payload.get("command_id"), "command": payload.get("command"), "status": "rejected", "reason": str(exc)}
+            controller.publish_status()
 
     client.on_connect, client.on_message = on_connect, on_message
     client.connect(settings.mqtt_host, settings.mqtt_port, keepalive=60)
