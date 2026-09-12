@@ -14,6 +14,9 @@ class Settings:
     data_dir: Path = Path(os.getenv("EDGE_DATA_DIR", "/data"))
     replay_file: str | None = os.getenv("EDGE_REPLAY_FILE")
     replay_speed: int = int(os.getenv("EDGE_REPLAY_SPEED", "10"))
+    # Demo-only local bootstrap. It deliberately does not publish a command to
+    # MQTT, and is off unless a deployment explicitly enables it.
+    replay_autostart: bool = _bool("EDGE_REPLAY_AUTOSTART", False)
     mqtt_host: str = os.getenv("MQTT_HOST", "localhost")
     mqtt_port: int = int(os.getenv("MQTT_PORT", "8883"))
     mqtt_username: str | None = os.getenv("MQTT_USERNAME")

@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from edge_agent.replay import ParquetReplay
+from edge_agent.config import Settings
+from edge_agent.main import ReplayController
 
 
 def test_missing_required_variables_has_actionable_error(tmp_path: Path) -> None:
@@ -12,3 +14,16 @@ def test_missing_required_variables_has_actionable_error(tmp_path: Path) -> None
     pyarrow.parquet.write_table(table, path)
     with pytest.raises(ValueError, match="missing required variables"):
         next(ParquetReplay(path).rows())
+
+
+def test_configured_autostart_is_local_and_runs_once() -> None:
+    class Client:
+        def publish(self, *_args, **_kwargs):
+            return None
+
+    controller = ReplayController(Settings(replay_file="demo.parquet", replay_autostart=True), Client())
+    received: list[dict] = []
+    controller.command = received.append  # type: ignore[method-assign]
+    controller.start_configured_replay_once()
+    controller.start_configured_replay_once()
+    assert received == [{"command": "START"}]

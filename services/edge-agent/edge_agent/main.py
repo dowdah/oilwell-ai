@@ -23,6 +23,7 @@ class ReplayController:
         self.instance = settings.replay_file
         self.sequence = 0
         self.worker: threading.Thread | None = None
+        self._autostart_pending = settings.replay_autostart
 
     @property
     def status_topic(self) -> str:
@@ -70,6 +71,18 @@ class ReplayController:
             else:
                 raise ValueError("unsupported command")
         self.publish_status()
+
+    def start_configured_replay_once(self) -> None:
+        """Start one locally configured demo replay without an MQTT command."""
+        with self.lock:
+            if not self._autostart_pending:
+                return
+            self._autostart_pending = False
+            configured = bool(self.instance)
+        if not configured:
+            logger.warning("EDGE_REPLAY_AUTOSTART ignored because no replay file is configured")
+            return
+        self.command({"command": "START"})
 
     def _replay(self) -> None:
         with self.lock:
@@ -120,6 +133,7 @@ def main() -> None:
         logger.info("MQTT connected: %s", reason_code)
         client.subscribe(f"{settings.mqtt_topic_prefix}/edge/{settings.device_id}/command", qos=1)
         controller.publish_status()
+        controller.start_configured_replay_once()
 
     def on_message(_: mqtt.Client, __, message: mqtt.MQTTMessage):
         try:
