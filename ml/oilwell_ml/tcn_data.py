@@ -10,6 +10,12 @@ from typing import Iterable, Iterator, Sequence
 from .features import CORE_VARIABLES
 from .manifest import LABEL_COLUMNS, VARIABLE_ALIASES
 
+try:
+    from torch.utils.data import IterableDataset
+except ImportError:  # Keep metadata-only tooling importable without torch.
+    class IterableDataset:  # type: ignore[no-redef]
+        pass
+
 
 @dataclass(frozen=True)
 class StandardScaler:
@@ -109,7 +115,7 @@ def fit_scaler(items: Iterable[dict], data_root: Path) -> StandardScaler:
     return StandardScaler(tuple(mean), tuple(value ** 0.5 for value in variance))
 
 
-class StreamingWindowDataset:
+class StreamingWindowDataset(IterableDataset):
     """A PyTorch-compatible iterable dataset that streams Parquet every epoch."""
 
     def __init__(self, items: list[dict], data_root: Path, scaler: StandardScaler, window_size: int = 180, stride: int = 10) -> None:

@@ -1,6 +1,6 @@
 from oilwell_ml.features import CORE_VARIABLES
 from oilwell_ml.tcn import TCNConfig
-from oilwell_ml.tcn_data import StandardScaler
+from oilwell_ml.tcn_data import StandardScaler, StreamingWindowDataset
 
 
 def test_scaler_keeps_the_seven_variable_order_and_transforms_channels() -> None:
@@ -14,6 +14,12 @@ def test_scaler_keeps_the_seven_variable_order_and_transforms_channels() -> None
 
 def test_tcn_config_round_trips_without_importing_torch() -> None:
     assert TCNConfig.from_dict(TCNConfig().to_dict()) == TCNConfig()
+
+
+def test_streaming_dataset_is_iterable_not_indexed_dataset() -> None:
+    from torch.utils.data import IterableDataset
+
+    assert issubclass(StreamingWindowDataset, IterableDataset)
 
 
 def test_tcn_has_the_required_input_output_shape_and_small_parameter_budget() -> None:
