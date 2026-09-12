@@ -21,7 +21,11 @@ class ReplayController:
         self.running, self.paused = False, False
         self.speed = settings.replay_speed if settings.replay_speed in {1, 5, 10, 20} else 10
         self.instance = settings.replay_file
-        self.sequence = 0
+        # PostgreSQL deduplicates telemetry by (device_id, sequence). Starting
+        # from a seconds-based epoch keeps the value within a signed INTEGER
+        # while making a recreated edge container continue with a fresh range
+        # instead of silently losing every replay row to old sequence values.
+        self.sequence = int(time.time())
         self.worker: threading.Thread | None = None
         self._autostart_pending = settings.replay_autostart
 

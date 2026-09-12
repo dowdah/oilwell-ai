@@ -4,6 +4,7 @@ import pytest
 
 from edge_agent.replay import ParquetReplay
 from edge_agent.config import Settings
+import edge_agent.main as edge_main
 from edge_agent.main import ReplayController
 
 
@@ -27,3 +28,12 @@ def test_configured_autostart_is_local_and_runs_once() -> None:
     controller.start_configured_replay_once()
     controller.start_configured_replay_once()
     assert received == [{"command": "START"}]
+
+
+def test_recreated_controller_uses_a_fresh_integer_sequence_range(monkeypatch) -> None:
+    class Client:
+        pass
+
+    monkeypatch.setattr(edge_main.time, "time", lambda: 1_789_214_000)
+    controller = ReplayController(Settings(), Client())
+    assert controller.sequence == 1_789_214_000
