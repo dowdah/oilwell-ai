@@ -137,7 +137,10 @@ class ModelSlot:
             if not (self.directory / metadata["artifact_file"]).is_file():
                 raise ValueError(f"model artifact not found: {metadata['artifact_file']}")
             loader = XGBoostAdapter if metadata["model_type"] == "xgboost" else TCNAdapter
-            self.adapter, self.metadata = loader.load(self.directory, metadata)
+            # Adapters own their deserialised runtime state; metadata remains
+            # the reviewed manifest that was schema-validated above.
+            self.adapter = loader.load(self.directory, metadata)
+            self.metadata = metadata
             logger.info("Loaded %s %s model %s", self.mode, metadata["model_type"], metadata["version"])
         except Exception as exc:
             self.load_error = str(exc)
