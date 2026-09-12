@@ -1,0 +1,551 @@
+{
+  "targets": {
+    "0": "Normal",
+    "3": "Severe Slugging",
+    "4": "Flow Instability",
+    "9": "Hydrate in Service Line"
+  },
+  "observation_labels": {
+    "0": [
+      "0"
+    ],
+    "3": [
+      "3"
+    ],
+    "4": [
+      "4"
+    ],
+    "9": [
+      "9",
+      "109"
+    ]
+  },
+  "instances": [
+    {
+      "instance_id": "0/WELL-00001_20170201010207.parquet",
+      "source_path": "0/WELL-00001_20170201010207.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "1df6fd74bc3b943570a70ffa075f53ca5b50d606eadea600acca977fc633146e",
+      "complete_target_windows": 1770,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201060114.parquet",
+      "source_path": "0/WELL-00001_20170201060114.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "28a0e2b67505c5e38a4b0e9dd924e38d392fd1285fd286f5052d4c97812e55ab",
+      "complete_target_windows": 1775,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201110124.parquet",
+      "source_path": "0/WELL-00001_20170201110124.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "70b50b84cf35de2d1132e57c635c452dc8d3cc2dec42b1c839a62e6a6682647f",
+      "complete_target_windows": 1774,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201160311.parquet",
+      "source_path": "0/WELL-00001_20170201160311.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "cff82e042723862613bf0e45d5bc835b7641d2fd5238c6fd6f9198881a5368de",
+      "complete_target_windows": 1764,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201210228.parquet",
+      "source_path": "0/WELL-00001_20170201210228.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "8a48739c1627b67ab33e84b9084d8672729c31b714f3c74b60ac3708445235a4",
+      "complete_target_windows": 1768,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170202020343.parquet",
+      "source_path": "0/WELL-00001_20170202020343.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "942491b785416ecb69f1da541fa802d88f844f53462b02f948d877dff39c3043",
+      "complete_target_windows": 1760,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170202070239.parquet",
+      "source_path": "0/WELL-00001_20170202070239.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "447adf1603582972e2ac95d60fb544deae6dc528f4b288fba7a7fbd43a10809b",
+      "complete_target_windows": 1767,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218000146.parquet",
+      "source_path": "0/WELL-00001_20170218000146.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "12f203e3fcdaa85c6e5fd5936c34445531d0a95e1bde5cb569814fb9bc58d46e",
+      "complete_target_windows": 1772,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218050218.parquet",
+      "source_path": "0/WELL-00001_20170218050218.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "64cff979090f6b25c39110a465138bbf82fbed0056c6e56bff7822e92bb912d9",
+      "complete_target_windows": 1769,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218100218.parquet",
+      "source_path": "0/WELL-00001_20170218100218.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "f7e88b9235c687a0ab0d116dcf880f074b5ff6be80610be572ce762788236ab0",
+      "complete_target_windows": 1769,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218150135.parquet",
+      "source_path": "0/WELL-00001_20170218150135.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "8872c2135a5c6bfa34954779ec37f5363427a08f61d920311ec9fb92bc44981d",
+      "complete_target_windows": 1773,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "0/WELL-00006_20170206210031.parquet",
+      "source_path": "0/WELL-00006_20170206210031.parquet",
+      "label": "0",
+      "label_name": "Normal",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "11c421b600c1424ed3e60dca274242fd7c8489bfefa89a7139e0853b7230d63e",
+      "complete_target_windows": 1780,
+      "observation_labels": [
+        "0"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00001_20170320120025.parquet",
+      "source_path": "3/WELL-00001_20170320120025.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "1ba4c1385ff94b09d5bf9e424bebc77d05b61e99469b4f22a305e6722dc86672",
+      "complete_target_windows": 1780,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918010114.parquet",
+      "source_path": "3/WELL-00014_20170918010114.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "fe92fedc21b829dfa6a91cf6a55ce0771a42ad80c7e2665f62f3080286a98702",
+      "complete_target_windows": 1775,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918060135.parquet",
+      "source_path": "3/WELL-00014_20170918060135.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "064b0d8ef7e762a89a27abbb6078861500e23b03c08f54814fc4d3461567ed42",
+      "complete_target_windows": 1773,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918110103.parquet",
+      "source_path": "3/WELL-00014_20170918110103.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "e980a4c6dac77a11a694c227d8644b451a38425c3fd8df50e77fc79d558ebc4f",
+      "complete_target_windows": 1776,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920000042.parquet",
+      "source_path": "3/WELL-00014_20170920000042.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "126d787150c90bfa8f7a07e8a210e45c68efe6b5d06e1da0362b5f46b11758e7",
+      "complete_target_windows": 1778,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920050228.parquet",
+      "source_path": "3/WELL-00014_20170920050228.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "2cc12e401f4d355e04120cd0a43df7d393d9b3db8b29b57efd3e0555f0023a32",
+      "complete_target_windows": 1768,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920100053.parquet",
+      "source_path": "3/WELL-00014_20170920100053.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "0724659cfbc69a0273818169695f46d3c87d44890801335f350f1e8b44482973",
+      "complete_target_windows": 1777,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920180207.parquet",
+      "source_path": "3/WELL-00014_20170920180207.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "5f062452b8516a53db1ce47bc7d999787f8bf2be08e0a07f16a7135b75c05620",
+      "complete_target_windows": 1770,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920230053.parquet",
+      "source_path": "3/WELL-00014_20170920230053.parquet",
+      "label": "3",
+      "label_name": "Severe Slugging",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "ad7873ca61290e61a63b1e0f9133429439243a4d16c8f36e472f3b92444b2db7",
+      "complete_target_windows": 1777,
+      "observation_labels": [
+        "3"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316110203.parquet",
+      "source_path": "4/WELL-00001_20170316110203.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "0ddb6fb89d75048b86ac237db29a19c65b17dba6d000bc75b45f2c8903252b0f",
+      "complete_target_windows": 690,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316130000.parquet",
+      "source_path": "4/WELL-00001_20170316130000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "c28654cfec1ff5423a933906731e0e52fe3ca7f414cc1d3fa88bb1e720e3b4a6",
+      "complete_target_windows": 697,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316150005.parquet",
+      "source_path": "4/WELL-00001_20170316150005.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "384553559b7f89ca2d4d8d56b28e4a832fbc0541b6bf8ec1723b77fb79eb74a9",
+      "complete_target_windows": 700,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316170000.parquet",
+      "source_path": "4/WELL-00001_20170316170000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "1a4b4a06a1c2fe1ddaaaf7c7ac587f87e874c8fd6c99cb916abbfcf7a40ecf78",
+      "complete_target_windows": 700,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316190000.parquet",
+      "source_path": "4/WELL-00001_20170316190000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "428a39b109e3f3b4ff7dc321b2759278db530fd1e614580df5f470ef2202dbd5",
+      "complete_target_windows": 701,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316210000.parquet",
+      "source_path": "4/WELL-00001_20170316210000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "1e639b23d2d2ae88f89744359e022c5d8731d276dec5cd950937662d5d356612",
+      "complete_target_windows": 701,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316230000.parquet",
+      "source_path": "4/WELL-00001_20170316230000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "8bccb47ae9cd88893ce23735a48e20e859c9b7393cd0547f06dfc1baf1fcdeac",
+      "complete_target_windows": 702,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317010000.parquet",
+      "source_path": "4/WELL-00001_20170317010000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "ad72877a6cd6ce81c6e7c411059fdc5a73f29f37cd6b6fbe2445e4df0fbe9280",
+      "complete_target_windows": 701,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317030000.parquet",
+      "source_path": "4/WELL-00001_20170317030000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "d0e1dd704d6c539bf43afea0620f8779fb3ff6789ae5ff047ab8f59a8cbe8d82",
+      "complete_target_windows": 699,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317050000.parquet",
+      "source_path": "4/WELL-00001_20170317050000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "f188a34d2606218a1fef7cfc2fd9aa43e197a1a0913532756fb19efa99fdc3f5",
+      "complete_target_windows": 700,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317070000.parquet",
+      "source_path": "4/WELL-00001_20170317070000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "14567e71ef632731491277057ecce7bfc1c6ec889a0fba24c1c4014827a3424d",
+      "complete_target_windows": 702,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317090000.parquet",
+      "source_path": "4/WELL-00001_20170317090000.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "de1831b819a3d1244a240f4bd81338ab12a782d4bcd68426576601868380f872",
+      "complete_target_windows": 700,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "4/WELL-00007_20170517200012.parquet",
+      "source_path": "4/WELL-00007_20170517200012.parquet",
+      "label": "4",
+      "label_name": "Flow Instability",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "531dc15c06737f20eab6cecdb1d2c994a3cc1aebadf1a1ee7893bb1c4f2a8610",
+      "complete_target_windows": 701,
+      "observation_labels": [
+        "4"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00014_20160304155906.parquet",
+      "source_path": "9/WELL-00014_20160304155906.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "f733c1984d2eca4002fd3ef0cadd1e5724de14454ac012de862b15649f90051e",
+      "complete_target_windows": 4899,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00014_20160306070000.parquet",
+      "source_path": "9/WELL-00014_20160306070000.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "92f8a41314f60ac0b1756bae0d52ae54857f6fc6abd711e808e6e767485d244d",
+      "complete_target_windows": 1908,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00014_20170214190000.parquet",
+      "source_path": "9/WELL-00014_20170214190000.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "880f72e2c5f1894d746b01753c67ab557d8adced9ebe0c6c582e4db7911ecd19",
+      "complete_target_windows": 60,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00016_20150418132043.parquet",
+      "source_path": "9/WELL-00016_20150418132043.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "15bc50059e98ea7076397bf96d892fb61df3a9b21534c3a3ffab58a02742ae41",
+      "complete_target_windows": 797,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00020_20131004225400.parquet",
+      "source_path": "9/WELL-00020_20131004225400.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "4c2076d1136d7eba2b0f086d9757ba170503b53b782f80aa53861573b1ffe357",
+      "complete_target_windows": 1,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    },
+    {
+      "instance_id": "9/WELL-00037_20181011071238.parquet",
+      "source_path": "9/WELL-00037_20181011071238.parquet",
+      "label": "9",
+      "label_name": "Hydrate in Service Line",
+      "domain": "real",
+      "well_id": null,
+      "sha256": "db96693b9dc7b1897bd58b91a9503311f62506788f384fef0d09d9d65d1da82e",
+      "complete_target_windows": 1054,
+      "observation_labels": [
+        "9",
+        "109"
+      ]
+    }
+  ]
+}

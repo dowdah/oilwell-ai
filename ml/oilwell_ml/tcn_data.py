@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Sequence
 
 from .features import CORE_VARIABLES
-from .manifest import VARIABLE_ALIASES
+from .manifest import LABEL_COLUMNS, VARIABLE_ALIASES
 
 
 @dataclass(frozen=True)
@@ -45,15 +45,19 @@ def _mapping(path: Path) -> dict[str, str]:
     return {target: source for target, source in mapping.items() if source is not None}
 
 
-def iter_rows(path: Path) -> Iterator[dict[str, float]]:
+def iter_rows(path: Path, target_labels: Sequence[str]) -> Iterator[dict[str, float]]:
     """Read Parquet batches one at a time and never fill missing signals silently."""
     import pyarrow.parquet as pq
 
     mapping = _mapping(path)
     parquet = pq.ParquetFile(path)
-    for batch in parquet.iter_batches(batch_size=4096, columns=list(mapping.values())):
+    label_column = next((name for name in LABEL_COLUMNS if name in parquet.schema.names), None)
+    if label_column is None:
+        raise ValueError(f"{path.name} is missing its observation label column")
+    allowed_labels = set(map(str, target_labels))
+    for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label_column]):
         for row in batch.to_pylist():
-            if any(row[source] is None for source in mapping.values()):
+            if str(row[label_column]) not in allowed_labels or any(row[source] is None for source in mapping.values()):
                 continue
             yield {target: float(row[source]) for target, source in mapping.items()}
 
@@ -62,13 +66,28 @@ def iter_windows(items: Iterable[dict], data_root: Path, window_size: int = 180,
     """Generate windows on demand; only the current 180-row deque stays in memory."""
     for item in items:
         label = int(item["label"])
+        observation_labels = item.get("observation_labels", [str(label)])
+        allowed_labels = set(map(str, observation_labels))
         buffer: deque[dict[str, float]] = deque(maxlen=window_size)
         complete_rows = 0
-        for row in iter_rows(data_root / item["source_path"]):
-            buffer.append(row)
-            complete_rows += 1
-            if len(buffer) == window_size and (complete_rows - window_size) % stride == 0:
-                yield list(buffer), label
+        path = data_root / item["source_path"]
+        mapping = _mapping(path)
+        import pyarrow.parquet as pq
+
+        parquet = pq.ParquetFile(path)
+        label_column = next((name for name in LABEL_COLUMNS if name in parquet.schema.names), None)
+        if label_column is None:
+            raise ValueError(f"{path.name} is missing its observation label column")
+        for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label_column]):
+            for row in batch.to_pylist():
+                if str(row[label_column]) not in allowed_labels or any(row[source] is None for source in mapping.values()):
+                    buffer.clear()
+                    complete_rows = 0
+                    continue
+                buffer.append({target: float(row[source]) for target, source in mapping.items()})
+                complete_rows += 1
+                if len(buffer) == window_size and (complete_rows - window_size) % stride == 0:
+                    yield list(buffer), label
 
 
 def fit_scaler(items: Iterable[dict], data_root: Path) -> StandardScaler:
@@ -77,7 +96,7 @@ def fit_scaler(items: Iterable[dict], data_root: Path) -> StandardScaler:
     sums = [0.0] * len(CORE_VARIABLES)
     sums_squared = [0.0] * len(CORE_VARIABLES)
     for item in items:
-        for row in iter_rows(data_root / item["source_path"]):
+        for row in iter_rows(data_root / item["source_path"], item.get("observation_labels", [item["label"]])):
             count += 1
             for index, name in enumerate(CORE_VARIABLES):
                 value = row[name]

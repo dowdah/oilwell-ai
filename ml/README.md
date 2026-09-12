@@ -28,6 +28,8 @@ python ml/scripts/train_baselines.py docs/experiments/3w-instance-selection.json
 
 前两个工件（manifest 与实例选择表）不含原始时序数据，可以提交以复现实验选择。训练命令会锁定分组 split，写入 `docs/experiments/3w-split.json`，并在 `ml/artifacts/current/` 生成 Isolation Forest、XGBoost、指标和可部署的元数据。将该目录只读挂载到 API 后，重启 API 才会加载新制品。
 
+选择表按 3W 的**实例目录标签**确定四分类目标；训练只从连续且完整的目标标记行生成窗口。Dataset 2.0.0 对瞬态事件使用「事件标签 + 100」：Hydrate in Service Line (`9`) 可包含正式标注的 `109` 瞬态行，选择表会显式列出这一规则，绝不把文件中的 Normal (`0`) 段当作 Hydrate。
+
 ## 第三阶段：TCN shadow 模型
 
 TCN 必须复用第二阶段生成的 `3w-split.json`，而不是重新划分时间点。安装此目录的依赖后运行：

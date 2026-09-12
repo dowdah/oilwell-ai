@@ -1,0 +1,30 @@
+{
+  "instance_count": 77,
+  "eligible_instance_count": 44,
+  "domain_counts": {
+    "real": 71,
+    "simulated": 6
+  },
+  "label_counts": {
+    "0": 42,
+    "3": 18,
+    "4": 17,
+    "109": 6,
+    "9": 2
+  },
+  "selected_label_counts": {
+    "0": 12,
+    "3": 9,
+    "4": 13,
+    "9": 6
+  },
+  "mean_missing_rate": {
+    "P_PDG": 0.23407919825823292,
+    "P_TPT": 0.15615712033615498,
+    "T_TPT": 0.143170107349142,
+    "P_MON_CKP": 0.026341248508497755,
+    "T_JUS_CKP": 0.26006449344603366,
+    "P_JUS_CKGL": 0.14324268185055902,
+    "QGL": 0.2340748120910228
+  }
+}

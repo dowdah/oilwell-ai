@@ -1,0 +1,2505 @@
+{
+  "dataset": "Petrobras 3W Dataset",
+  "version": "2.0.0",
+  "generated_at": "2026-09-12T08:22:11.305231+00:00",
+  "root": "private-local-data-root",
+  "instances": [
+    {
+      "instance_id": "0/WELL-00001_20170201010207.parquet",
+      "source_path": "0/WELL-00001_20170201010207.parquet",
+      "sha256": "1df6fd74bc3b943570a70ffa075f53ca5b50d606eadea600acca977fc633146e",
+      "rows": 21474,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1770
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201060114.parquet",
+      "source_path": "0/WELL-00001_20170201060114.parquet",
+      "sha256": "28a0e2b67505c5e38a4b0e9dd924e38d392fd1285fd286f5052d4c97812e55ab",
+      "rows": 21527,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1775
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201110124.parquet",
+      "source_path": "0/WELL-00001_20170201110124.parquet",
+      "sha256": "70b50b84cf35de2d1132e57c635c452dc8d3cc2dec42b1c839a62e6a6682647f",
+      "rows": 21517,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1774
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201160311.parquet",
+      "source_path": "0/WELL-00001_20170201160311.parquet",
+      "sha256": "cff82e042723862613bf0e45d5bc835b7641d2fd5238c6fd6f9198881a5368de",
+      "rows": 21410,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1764
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170201210228.parquet",
+      "source_path": "0/WELL-00001_20170201210228.parquet",
+      "sha256": "8a48739c1627b67ab33e84b9084d8672729c31b714f3c74b60ac3708445235a4",
+      "rows": 21453,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1768
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170202020343.parquet",
+      "source_path": "0/WELL-00001_20170202020343.parquet",
+      "sha256": "942491b785416ecb69f1da541fa802d88f844f53462b02f948d877dff39c3043",
+      "rows": 21378,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1760
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170202070239.parquet",
+      "source_path": "0/WELL-00001_20170202070239.parquet",
+      "sha256": "447adf1603582972e2ac95d60fb544deae6dc528f4b288fba7a7fbd43a10809b",
+      "rows": 21442,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1767
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218000146.parquet",
+      "source_path": "0/WELL-00001_20170218000146.parquet",
+      "sha256": "12f203e3fcdaa85c6e5fd5936c34445531d0a95e1bde5cb569814fb9bc58d46e",
+      "rows": 21495,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1772
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218050218.parquet",
+      "source_path": "0/WELL-00001_20170218050218.parquet",
+      "sha256": "64cff979090f6b25c39110a465138bbf82fbed0056c6e56bff7822e92bb912d9",
+      "rows": 21463,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1769
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218100218.parquet",
+      "source_path": "0/WELL-00001_20170218100218.parquet",
+      "sha256": "f7e88b9235c687a0ab0d116dcf880f074b5ff6be80610be572ce762788236ab0",
+      "rows": 21463,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1769
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00001_20170218150135.parquet",
+      "source_path": "0/WELL-00001_20170218150135.parquet",
+      "sha256": "8872c2135a5c6bfa34954779ec37f5363427a08f61d920311ec9fb92bc44981d",
+      "rows": 21506,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1773
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "0/WELL-00002_20131211220015.parquet",
+      "source_path": "0/WELL-00002_20131211220015.parquet",
+      "sha256": "fdee909cbea43a625fead0b969f2fee790647cccc199182d8cf842c45fd978e7",
+      "rows": 10786,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 1.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "0/WELL-00003_20170514000000.parquet",
+      "source_path": "0/WELL-00003_20170514000000.parquet",
+      "sha256": "5d54428170f0934627e446247e99d5c8cf5ffdbc6dc0263f715a32e07fda3d4b",
+      "rows": 21532,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "0/WELL-00004_20140806210033.parquet",
+      "source_path": "0/WELL-00004_20140806210033.parquet",
+      "sha256": "1fbdf206ce68c571d95bdf91e0371e919790517225a8c1eef15406626610f416",
+      "rows": 10768,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "0/WELL-00005_20170331050014.parquet",
+      "source_path": "0/WELL-00005_20170331050014.parquet",
+      "sha256": "d5bfb6b744beac7e26c699724a612436fe3cd12790ee96f8545f1469b976b7da",
+      "rows": 21514,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "0/WELL-00006_20170206210031.parquet",
+      "source_path": "0/WELL-00006_20170206210031.parquet",
+      "sha256": "11c421b600c1424ed3e60dca274242fd7c8489bfefa89a7139e0853b7230d63e",
+      "rows": 21570,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1780
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/SIMULATED_00001.parquet",
+      "source_path": "3/SIMULATED_00001.parquet",
+      "sha256": "fe3de3166f84b185db1947c4416d6f20f582b8b1aa11fc23efea72936ceffd31",
+      "rows": 51999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/SIMULATED_00002.parquet",
+      "source_path": "3/SIMULATED_00002.parquet",
+      "sha256": "38998ded339fb4aa7eacf5a7070da7192a6510fa3d216fc1cf0b0530ff799bd6",
+      "rows": 56999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/SIMULATED_00003.parquet",
+      "source_path": "3/SIMULATED_00003.parquet",
+      "sha256": "14671d74f15911cded66e11c24cdb3da360d477b977be8e62859fa2f52fa6c60",
+      "rows": 61999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/SIMULATED_00004.parquet",
+      "source_path": "3/SIMULATED_00004.parquet",
+      "sha256": "2a614aac0e9618463b88309f41c881aea8a8f47395d41e884e15c916f089101e",
+      "rows": 61999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/SIMULATED_00005.parquet",
+      "source_path": "3/SIMULATED_00005.parquet",
+      "sha256": "e0341089b6eae80fe71b35f8ecdd44f49a02c51b643a0b91db755b333fa86f96",
+      "rows": 61999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/SIMULATED_00006.parquet",
+      "source_path": "3/SIMULATED_00006.parquet",
+      "sha256": "09329790dd4ff6d31ee3c02bb95a699ddcebf3dd6e7d0b99e03878f035453158",
+      "rows": 61999,
+      "domain": "simulated",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "3/WELL-00001_20170320120025.parquet",
+      "source_path": "3/WELL-00001_20170320120025.parquet",
+      "sha256": "1ba4c1385ff94b09d5bf9e424bebc77d05b61e99469b4f22a305e6722dc86672",
+      "rows": 21576,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1780
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170917140000.parquet",
+      "source_path": "3/WELL-00014_20170917140000.parquet",
+      "sha256": "7837b391ef83884a4c32637c943ad98d08c3af3c2c65e2f621bcb1dd2fe27677",
+      "rows": 21376,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.022688997005988025,
+        "P_TPT": 0.022688997005988025,
+        "T_TPT": 0.022688997005988025,
+        "P_MON_CKP": 0.02521519461077844,
+        "T_JUS_CKP": 0.022408308383233533,
+        "P_JUS_CKGL": 0.025402320359281437,
+        "QGL": 0.023250374251497005
+      },
+      "complete_target_window_counts": {
+        "3": 1679
+      },
+      "eligible": false
+    },
+    {
+      "instance_id": "3/WELL-00014_20170917190000.parquet",
+      "source_path": "3/WELL-00014_20170917190000.parquet",
+      "sha256": "d226987c1d5a9d7f6c9c2ef472b060c975ae2e5487530d825c14cf430c11cd52",
+      "rows": 21562,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0007420461923754754,
+        "P_TPT": 0.0007420461923754754,
+        "T_TPT": 0.0007420461923754754,
+        "P_MON_CKP": 0.003060940543548836,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.003060940543548836,
+        "QGL": 0.0005101567572581393
+      },
+      "complete_target_window_counts": {
+        "3": 1779
+      },
+      "eligible": false
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918010114.parquet",
+      "source_path": "3/WELL-00014_20170918010114.parquet",
+      "sha256": "fe92fedc21b829dfa6a91cf6a55ce0771a42ad80c7e2665f62f3080286a98702",
+      "rows": 21527,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1775
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918060135.parquet",
+      "source_path": "3/WELL-00014_20170918060135.parquet",
+      "sha256": "064b0d8ef7e762a89a27abbb6078861500e23b03c08f54814fc4d3461567ed42",
+      "rows": 21506,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1773
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170918110103.parquet",
+      "source_path": "3/WELL-00014_20170918110103.parquet",
+      "sha256": "e980a4c6dac77a11a694c227d8644b451a38425c3fd8df50e77fc79d558ebc4f",
+      "rows": 21538,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1776
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170919200016.parquet",
+      "source_path": "3/WELL-00014_20170919200016.parquet",
+      "sha256": "ebabfa676f1ae3dd8052d7fab8fb0916e850ba3ad41febd3e6cc6ba19e3ad91e",
+      "rows": 17985,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0006672226855713094,
+        "P_TPT": 0.0006672226855713094,
+        "T_TPT": 0.0006672226855713094,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.002557686961356686,
+        "P_JUS_CKGL": 0.0012232415902140672,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1421
+      },
+      "eligible": false
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920000042.parquet",
+      "source_path": "3/WELL-00014_20170920000042.parquet",
+      "sha256": "126d787150c90bfa8f7a07e8a210e45c68efe6b5d06e1da0362b5f46b11758e7",
+      "rows": 21559,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1778
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920050228.parquet",
+      "source_path": "3/WELL-00014_20170920050228.parquet",
+      "sha256": "2cc12e401f4d355e04120cd0a43df7d393d9b3db8b29b57efd3e0555f0023a32",
+      "rows": 21453,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1768
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920100053.parquet",
+      "source_path": "3/WELL-00014_20170920100053.parquet",
+      "sha256": "0724659cfbc69a0273818169695f46d3c87d44890801335f350f1e8b44482973",
+      "rows": 21548,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1777
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920180207.parquet",
+      "source_path": "3/WELL-00014_20170920180207.parquet",
+      "sha256": "5f062452b8516a53db1ce47bc7d999787f8bf2be08e0a07f16a7135b75c05620",
+      "rows": 21474,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1770
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "3/WELL-00014_20170920230053.parquet",
+      "source_path": "3/WELL-00014_20170920230053.parquet",
+      "sha256": "ad7873ca61290e61a63b1e0f9133429439243a4d16c8f36e472f3b92444b2db7",
+      "rows": 21548,
+      "domain": "real",
+      "label_values": [
+        "3"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "3": 1777
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316110203.parquet",
+      "source_path": "4/WELL-00001_20170316110203.parquet",
+      "sha256": "0ddb6fb89d75048b86ac237db29a19c65b17dba6d000bc75b45f2c8903252b0f",
+      "rows": 10678,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 690
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316130000.parquet",
+      "source_path": "4/WELL-00001_20170316130000.parquet",
+      "sha256": "c28654cfec1ff5423a933906731e0e52fe3ca7f414cc1d3fa88bb1e720e3b4a6",
+      "rows": 10749,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 697
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316150005.parquet",
+      "source_path": "4/WELL-00001_20170316150005.parquet",
+      "sha256": "384553559b7f89ca2d4d8d56b28e4a832fbc0541b6bf8ec1723b77fb79eb74a9",
+      "rows": 10770,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 700
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316170000.parquet",
+      "source_path": "4/WELL-00001_20170316170000.parquet",
+      "sha256": "1a4b4a06a1c2fe1ddaaaf7c7ac587f87e874c8fd6c99cb916abbfcf7a40ecf78",
+      "rows": 10775,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 700
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316190000.parquet",
+      "source_path": "4/WELL-00001_20170316190000.parquet",
+      "sha256": "428a39b109e3f3b4ff7dc321b2759278db530fd1e614580df5f470ef2202dbd5",
+      "rows": 10785,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 701
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316210000.parquet",
+      "source_path": "4/WELL-00001_20170316210000.parquet",
+      "sha256": "1e639b23d2d2ae88f89744359e022c5d8731d276dec5cd950937662d5d356612",
+      "rows": 10780,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 701
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170316230000.parquet",
+      "source_path": "4/WELL-00001_20170316230000.parquet",
+      "sha256": "8bccb47ae9cd88893ce23735a48e20e859c9b7393cd0547f06dfc1baf1fcdeac",
+      "rows": 10790,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 702
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317010000.parquet",
+      "source_path": "4/WELL-00001_20170317010000.parquet",
+      "sha256": "ad72877a6cd6ce81c6e7c411059fdc5a73f29f37cd6b6fbe2445e4df0fbe9280",
+      "rows": 10785,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 701
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317030000.parquet",
+      "source_path": "4/WELL-00001_20170317030000.parquet",
+      "sha256": "d0e1dd704d6c539bf43afea0620f8779fb3ff6789ae5ff047ab8f59a8cbe8d82",
+      "rows": 10764,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 699
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317050000.parquet",
+      "source_path": "4/WELL-00001_20170317050000.parquet",
+      "sha256": "f188a34d2606218a1fef7cfc2fd9aa43e197a1a0913532756fb19efa99fdc3f5",
+      "rows": 10775,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 700
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317070000.parquet",
+      "source_path": "4/WELL-00001_20170317070000.parquet",
+      "sha256": "14567e71ef632731491277057ecce7bfc1c6ec889a0fba24c1c4014827a3424d",
+      "rows": 10790,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 702
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00001_20170317090000.parquet",
+      "source_path": "4/WELL-00001_20170317090000.parquet",
+      "sha256": "de1831b819a3d1244a240f4bd81338ab12a782d4bcd68426576601868380f872",
+      "rows": 10770,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 700
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00002_20131208220000.parquet",
+      "source_path": "4/WELL-00002_20131208220000.parquet",
+      "sha256": "80e771231df8e6c00f77cc6a9f89fa95f9cc35f7a9937e83a46b5cff41660fd2",
+      "rows": 10775,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 1.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "4/WELL-00004_20140804190012.parquet",
+      "source_path": "4/WELL-00004_20140804190012.parquet",
+      "sha256": "47692b711ea3b356335abc4d78df988e9c1b85e7ba834f11e753a0d57a65dbea",
+      "rows": 10789,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 1.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "4/WELL-00005_20170616010033.parquet",
+      "source_path": "4/WELL-00005_20170616010033.parquet",
+      "sha256": "ea692216f57acc66648d0a30c7028c25057c298583d9bd7042900ae20db1a424",
+      "rows": 10768,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "4/WELL-00007_20170517200012.parquet",
+      "source_path": "4/WELL-00007_20170517200012.parquet",
+      "sha256": "531dc15c06737f20eab6cecdb1d2c994a3cc1aebadf1a1ee7893bb1c4f2a8610",
+      "rows": 10789,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "4": 701
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "4/WELL-00010_20180416070150.parquet",
+      "source_path": "4/WELL-00010_20180416070150.parquet",
+      "sha256": "f908b220f7b75b83b73dab8bbb82815482f1278eb841e38a37846e5afa16c6af",
+      "rows": 10691,
+      "domain": "real",
+      "label_values": [
+        "4"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00010_20180517000402.parquet",
+      "source_path": "9/WELL-00010_20180517000402.parquet",
+      "sha256": "626e71de388bff7b124059a39a259894afec15e69efee9503ad39f904969f53b",
+      "rows": 76722,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00010_20180715083053.parquet",
+      "source_path": "9/WELL-00010_20180715083053.parquet",
+      "sha256": "2fc27957c25f5844cf123a1e5c8d580a211d5eefbfd3e816c326d6466231f3c8",
+      "rows": 19694,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00010_20180717234051.parquet",
+      "source_path": "9/WELL-00010_20180717234051.parquet",
+      "sha256": "6bb77386fb11a9cb63766dc7f243a241b6337352bb2222b1583b80df3b73c267",
+      "rows": 18996,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00010_20180720234103.parquet",
+      "source_path": "9/WELL-00010_20180720234103.parquet",
+      "sha256": "178d7830d9433e793e5a796625dee33dbd4858438a1f1a5f982cdc9941fc5228",
+      "rows": 22674,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00010_20180723134436.parquet",
+      "source_path": "9/WELL-00010_20180723134436.parquet",
+      "sha256": "136f550e61f1d92cb09d4c8123a1ce81dc56b0063e0417e2e04af0243fc188a5",
+      "rows": 87048,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 1.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00014_20160304155906.parquet",
+      "source_path": "9/WELL-00014_20160304155906.parquet",
+      "sha256": "f733c1984d2eca4002fd3ef0cadd1e5724de14454ac012de862b15649f90051e",
+      "rows": 70944,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1801,
+        "109": 4899
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00014_20160306070000.parquet",
+      "source_path": "9/WELL-00014_20160306070000.parquet",
+      "sha256": "92f8a41314f60ac0b1756bae0d52ae54857f6fc6abd711e808e6e767485d244d",
+      "rows": 37369,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1434,
+        "109": 1908
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00014_20170214190000.parquet",
+      "source_path": "9/WELL-00014_20170214190000.parquet",
+      "sha256": "880f72e2c5f1894d746b01753c67ab557d8adced9ebe0c6c582e4db7911ecd19",
+      "rows": 21601,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109",
+        "9"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1688,
+        "109": 48,
+        "9": 12
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00015_20190922060029.parquet",
+      "source_path": "9/WELL-00015_20190922060029.parquet",
+      "sha256": "74a07c7621162a96d57b84e37a6b15511f600ebfcf2d450e91a6fb65b48d304d",
+      "rows": 12542,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 877
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00016_20150418132043.parquet",
+      "source_path": "9/WELL-00016_20150418132043.parquet",
+      "sha256": "15bc50059e98ea7076397bf96d892fb61df3a9b21534c3a3ffab58a02742ae41",
+      "rows": 12471,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109",
+        "9"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 38,
+        "109": 603,
+        "9": 194
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00016_20190924191606.parquet",
+      "source_path": "9/WELL-00016_20190924191606.parquet",
+      "sha256": "0344c72ee5f908491500841378ec70b2d10846b7b39b16e6d0ee9fd620e75c0f",
+      "rows": 45465,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 4169
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00016_20190925110952.parquet",
+      "source_path": "9/WELL-00016_20190925110952.parquet",
+      "sha256": "9b4c8fc77c7892ed6e9e13392c565265880995dd175e55c90b5396463831ce64",
+      "rows": 17101,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1333
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00020_20131004225400.parquet",
+      "source_path": "9/WELL-00020_20131004225400.parquet",
+      "sha256": "4c2076d1136d7eba2b0f086d9757ba170503b53b782f80aa53861573b1ffe357",
+      "rows": 7424,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 347,
+        "109": 1
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00033_20190925190420.parquet",
+      "source_path": "9/WELL-00033_20190925190420.parquet",
+      "sha256": "88aafbeffc3ffc1f114cac26403ca47adbdb9df3b93e0b4ff812bb6b8b13a71e",
+      "rows": 42706,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00033_20190926065206.parquet",
+      "source_path": "9/WELL-00033_20190926065206.parquet",
+      "sha256": "1f7ff7efd8e885939f7d4238dbabd9fdbaf8e5459f9bfa5f597b0e7356365061",
+      "rows": 21023,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00033_20190928030111.parquet",
+      "source_path": "9/WELL-00033_20190928030111.parquet",
+      "sha256": "710e57bacb3022933aeca0b77987ffc723bf22d9944b4fea3944e9708cc2bd53",
+      "rows": 25058,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00033_20190928210207.parquet",
+      "source_path": "9/WELL-00033_20190928210207.parquet",
+      "sha256": "bba1e1017906ee1e2c4e5496305e60c1adc54b159bceae84f80db503d07413c8",
+      "rows": 35767,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00033_20190930190000.parquet",
+      "source_path": "9/WELL-00033_20190930190000.parquet",
+      "sha256": "806cc3d2103de0e9c3816870f493933113fec659bdcb563020f6032901c79870",
+      "rows": 32135,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00033_20191004020000.parquet",
+      "source_path": "9/WELL-00033_20191004020000.parquet",
+      "sha256": "7f063b2e6d86e9d0a8475f65e661920f20d4847eb14d7ce658da62eb50cc60e9",
+      "rows": 12432,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 1.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00034_20190825004401.parquet",
+      "source_path": "9/WELL-00034_20190825004401.parquet",
+      "sha256": "2d9da24c36bdd79e22a8e04370a2268ca6218a106a2e2936f7bca2595866d0aa",
+      "rows": 18906,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00034_20190825150318.parquet",
+      "source_path": "9/WELL-00034_20190825150318.parquet",
+      "sha256": "1572ab3e9f39851eb9ccbdfbc88b9483af0387e45fbe8cbadbba14b344cb4554",
+      "rows": 17698,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00034_20190826050146.parquet",
+      "source_path": "9/WELL-00034_20190826050146.parquet",
+      "sha256": "4cc12563017863c871f0e2a065e9cf1d9616b0f4815234fc4538d07662878c2e",
+      "rows": 35788,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00035_20190819093245.parquet",
+      "source_path": "9/WELL-00035_20190819093245.parquet",
+      "sha256": "20b8f4f42b231f0c9760483d1cc0f222bc4576aa014e77adcc290d90147c2005",
+      "rows": 53670,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 1.0,
+        "P_TPT": 0.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00036_20190925100042.parquet",
+      "source_path": "9/WELL-00036_20190925100042.parquet",
+      "sha256": "76c4dacf00302f34e8f962dc49ac9b974d1df80728fd671ff56a8046f2b4999d",
+      "rows": 10735,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 1.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 1.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {},
+      "eligible": false
+    },
+    {
+      "instance_id": "9/WELL-00037_20181011071238.parquet",
+      "source_path": "9/WELL-00037_20181011071238.parquet",
+      "sha256": "db96693b9dc7b1897bd58b91a9503311f62506788f384fef0d09d9d65d1da82e",
+      "rows": 31643,
+      "domain": "real",
+      "label_values": [
+        "0",
+        "109"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 1716,
+        "109": 1054
+      },
+      "eligible": true
+    },
+    {
+      "instance_id": "9/WELL-00038_20190924212924.parquet",
+      "source_path": "9/WELL-00038_20190924212924.parquet",
+      "sha256": "dffb5eea20dadc8e3fe981faf4e2bde9dd8e3f43dbcd968df48e15e60130a429",
+      "rows": 34083,
+      "domain": "real",
+      "label_values": [
+        "0"
+      ],
+      "source_columns": {
+        "P_PDG": "P-PDG",
+        "P_TPT": "P-TPT",
+        "T_TPT": "T-TPT",
+        "P_MON_CKP": "P-MON-CKP",
+        "T_JUS_CKP": "T-JUS-CKP",
+        "P_JUS_CKGL": "P-JUS-CKGL",
+        "QGL": "QGL"
+      },
+      "missing_variables": [],
+      "missing_rate": {
+        "P_PDG": 0.0,
+        "P_TPT": 0.0,
+        "T_TPT": 0.0,
+        "P_MON_CKP": 0.0,
+        "T_JUS_CKP": 0.0,
+        "P_JUS_CKGL": 0.0,
+        "QGL": 0.0
+      },
+      "complete_target_window_counts": {
+        "0": 3031
+      },
+      "eligible": true
+    }
+  ]
+}

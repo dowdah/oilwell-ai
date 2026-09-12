@@ -21,7 +21,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from oilwell_ml.features import CORE_VARIABLES, FEATURE_NAMES, window_features
-from oilwell_ml.manifest import VARIABLE_ALIASES
+from oilwell_ml.manifest import LABEL_COLUMNS, VARIABLE_ALIASES
 
 TIMESTAMP_COLUMNS = ("timestamp", "TIMESTAMP", "time", "TIME")
 TARGETS = ("0", "3", "4", "9")
@@ -47,12 +47,16 @@ def first_window(item: dict, data_root: Path, window_size: int) -> dict:
     timestamp_column = next((name for name in TIMESTAMP_COLUMNS if name in available), None)
     if timestamp_column is None:
         raise ValueError(f"{path.name} has no supported timestamp column")
+    label_column = next((name for name in LABEL_COLUMNS if name in available), None)
+    if label_column is None:
+        raise ValueError(f"{path.name} has no supported label column")
 
     rows: deque[tuple[str, dict[str, float]]] = deque(maxlen=window_size)
-    columns = [*mapping.values(), timestamp_column]
+    columns = [*mapping.values(), timestamp_column, label_column]
     for batch in parquet.iter_batches(batch_size=4096, columns=columns):
         for row in batch.to_pylist():
-            if any(row[source] is None for source in mapping.values()):
+            if str(row[label_column]) not in item.get("observation_labels", [item["label"]]) or any(row[source] is None for source in mapping.values()):
+                rows.clear()
                 continue
             rows.append((timestamp(row[timestamp_column]), {
                 target: float(row[source]) for target, source in mapping.items()

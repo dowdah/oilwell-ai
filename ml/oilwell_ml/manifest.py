@@ -37,6 +37,8 @@ def inspect_parquet(path: Path, root: Path) -> dict[str, Any]:
     nulls = {name: 0 for name in CORE_VARIABLES}
     rows = 0
     labels: set[str] = set()
+    window_counts: dict[str, int] = {}
+    runs: dict[str, int] = {}
     selected = [raw for raw in mapping.values() if raw] + ([label_column] if label_column else [])
     for batch in parquet.iter_batches(batch_size=4096, columns=selected):
         rows += batch.num_rows
@@ -45,14 +47,29 @@ def inspect_parquet(path: Path, root: Path) -> dict[str, Any]:
                 nulls[target] += batch.column(batch.schema.get_field_index(raw)).null_count
         if label_column:
             labels.update(str(value) for value in batch.column(batch.schema.get_field_index(label_column)).to_pylist() if value is not None)
+        if label_column and not missing:
+            for row in batch.to_pylist():
+                label = row[label_column]
+                valid = label is not None and all(row[raw] is not None for raw in mapping.values() if raw)
+                if not valid:
+                    runs.clear()
+                    continue
+                target = str(label)
+                for other in list(runs):
+                    if other != target:
+                        del runs[other]
+                runs[target] = runs.get(target, 0) + 1
+                if runs[target] >= 180 and (runs[target] - 180) % 10 == 0:
+                    window_counts[target] = window_counts.get(target, 0) + 1
     relative = path.relative_to(root).as_posix()
-    lower_parts = {part.lower() for part in path.parts}
-    domain = next((value for value in ("real", "simulated", "hand-drawn") if value in lower_parts), "unknown")
+    filename = path.name.upper()
+    domain = "simulated" if filename.startswith("SIMULATED_") else "hand-drawn" if filename.startswith("HAND-DRAWN_") else "real" if filename.startswith("WELL-") else "unknown"
     return {
         "instance_id": relative, "source_path": relative, "sha256": sha256(path), "rows": rows,
         "domain": domain, "label_values": sorted(labels), "source_columns": mapping,
         "missing_variables": missing,
         "missing_rate": {name: None if raw is None or not rows else nulls[name] / rows for name, raw in mapping.items()},
+        "complete_target_window_counts": window_counts,
         "eligible": not missing and all(nulls[name] == 0 for name in CORE_VARIABLES),
     }
 
@@ -61,7 +78,7 @@ def build_manifest(root: Path, output: Path) -> dict[str, Any]:
     instances = [inspect_parquet(path, root) for path in sorted(root.rglob("*.parquet"))]
     result = {
         "dataset": "Petrobras 3W Dataset", "version": "2.0.0",
-        "generated_at": datetime.now(UTC).isoformat(), "root": str(root), "instances": instances,
+        "generated_at": datetime.now(UTC).isoformat(), "root": "private-local-data-root", "instances": instances,
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")

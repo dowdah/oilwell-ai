@@ -10,6 +10,7 @@ from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
+from typing import Sequence
 
 import joblib
 import numpy as np
@@ -21,7 +22,7 @@ from xgboost import XGBClassifier
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from oilwell_ml.features import CORE_VARIABLES, FEATURE_NAMES, window_features
-from oilwell_ml.manifest import VARIABLE_ALIASES
+from oilwell_ml.manifest import LABEL_COLUMNS, VARIABLE_ALIASES
 from oilwell_ml.split import grouped_split
 
 TARGETS = {"0": "Normal", "3": "Severe Slugging", "4": "Flow Instability", "9": "Hydrate in Service Line"}
@@ -34,22 +35,28 @@ def git_commit() -> str:
         return "unknown"
 
 
-def stream_windows(path: Path, window_size: int = 180, stride: int = 10):
+def stream_windows(path: Path, target_labels: Sequence[str], window_size: int = 180, stride: int = 10):
     parquet = pq.ParquetFile(path)
     columns = set(parquet.schema.names)
     mapping = {target: next((name for name in aliases if name in columns), None) for target, aliases in VARIABLE_ALIASES.items()}
     missing = [name for name, source in mapping.items() if source is None]
     if missing:
         raise ValueError(f"{path.name} is missing required variables: {', '.join(missing)}")
+    label_column = next((name for name in LABEL_COLUMNS if name in columns), None)
+    if label_column is None:
+        raise ValueError(f"{path.name} is missing its observation label column")
+    allowed_labels = set(map(str, target_labels))
     rows: deque[dict[str, float]] = deque(maxlen=window_size)
-    index = 0
-    for batch in parquet.iter_batches(batch_size=4096, columns=list(mapping.values())):
+    run = 0
+    for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label_column]):
         for row in batch.to_pylist():
-            if any(row[source] is None for source in mapping.values()):
+            if str(row[label_column]) not in allowed_labels or any(row[source] is None for source in mapping.values()):
+                rows.clear()
+                run = 0
                 continue
             rows.append({target: float(row[source]) for target, source in mapping.items()})
-            index += 1
-            if len(rows) == window_size and (index - window_size) % stride == 0:
+            run += 1
+            if len(rows) == window_size and (run - window_size) % stride == 0:
                 yield window_features(list(rows))
 
 
@@ -57,7 +64,7 @@ def features_for_groups(items: list[dict], data_root: Path) -> tuple[np.ndarray,
     features, labels = [], []
     code_to_index = {code: index for index, code in enumerate(TARGETS)}
     for item in items:
-        for feature_row in stream_windows(data_root / item["source_path"]):
+        for feature_row in stream_windows(data_root / item["source_path"], item.get("observation_labels", [item["label"]])):
             features.append(feature_row)
             labels.append(code_to_index[item["label"]])
     if not features:
