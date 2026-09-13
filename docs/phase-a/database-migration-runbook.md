@@ -83,7 +83,7 @@ Preflight A
 → Fresh Production Backup
 → Final Schema/Data Assertion
 → Approved DDL
-→ Post-Migration Validation
+→ Post-Migration Database Validation
 → Database ready for C1 deployment
 ```
 
@@ -325,9 +325,9 @@ psql "$PROD_DATABASE_URL" -X -v ON_ERROR_STOP=1 \
   | tee "$MIGRATION_AUDIT_DIR/${MAINTENANCE_ID}-migration-output.txt"
 ```
 
-出现 `lock_timeout`、`statement_timeout`、任意 SQL 错误、连接中断或不确定提交结果时，立即进入第 10 节，不要重试或替换 SQL。只有明确看到同一会话的 `COMMIT` 成功，才进入 post-migration validation。
+出现 `lock_timeout`、`statement_timeout`、任意 SQL 错误、连接中断或不确定提交结果时，立即进入第 10 节，不要重试或替换 SQL。只有明确看到同一会话的 `COMMIT` 成功，才进入 post-migration database validation。
 
-## 8. Post-Migration Validation
+## 8. Post-Migration Database Validation
 
 DDL 成功后，保持所有写入关闭。将迁移前和迁移后快照逐项比较；不可只比较“数据库能连接”。
 
@@ -415,7 +415,7 @@ WHERE resolved_at IS NOT NULL;
 SQL
 ```
 
-Use a deterministic diff tool to compare the pre/post audit files and attach the result to the change record. The operator must apply the object-specific OID rules above: inference composite uniqueness has immutable identity; telemetry uniqueness has immutable semantics but recorded OID/relfilenode changes require review rather than automatic failure; all unrelated objects retain immutable definition/OID expectations. Any row-count, sequence-signature, uniqueness semantic, foreign-key definition, nullability, index validity/readiness or unexpected unrelated schema difference is an Abort condition.
+Use a deterministic diff tool to compare the pre/post audit files and attach the result to the change record. The operator must apply the object-specific OID rules above: `uq_inference_telemetry_model_mode` has immutable definition, constraint OID and backing-index OID; `uq_telemetry_device_sequence` has immutable uniqueness semantics but its recorded OID/relfilenode changes require review rather than automatic failure; all unrelated objects retain immutable definition/OID expectations. Any row-count, sequence-signature, telemetry uniqueness semantic, foreign-key definition, nullability, index validity/readiness or unexpected unrelated schema difference is an Abort condition.
 
 ## 9. 应用兼容性边界（不部署 C1）
 
@@ -457,14 +457,15 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 - lock timeout、statement timeout、DDL 错误、连接中断或提交状态不明；
 - telemetry、alarms、inference_results 行数异常；
 - 任一 device 的 sequence count/min/max 或 sequence-value signature 异常；
-- telemetry 或 inference 唯一约束异常，尤其是 inference 复合约束 OID/定义变化；
-- 关键索引、外键或其 OID/定义异常；
+- `uq_telemetry_device_sequence` 不再是 `public.telemetry` 上已验证的 UNIQUE、ordered columns 不再为 `(device_id, sequence)`，或其 backing index 不再 valid/ready；
+- `uq_inference_telemetry_model_mode` 的 definition、constraint OID 或 backing-index OID 变化；
+- 任何不依赖 `telemetry.sequence` 的约束、索引或外键出现意外定义/OID 变化；
 - 旧 API 被意外启动，或发现其 startup DDL 风险被触发；
 - PostgreSQL、宿主磁盘、CPU、内存、连接数或 ECS 资源异常。
 
 ## 12. 维护窗口收尾
 
-在所有 post-migration validation 通过后：
+在所有 post-migration database validation 通过后：
 
 1. 将 Go/No-Go checklist、备份 SHA-256、pre/post 输出、OID/定义 diff、停写确认和执行时间写入受控变更记录；
 2. 保持 telemetry 写入关闭，并保持旧 API 停止；
