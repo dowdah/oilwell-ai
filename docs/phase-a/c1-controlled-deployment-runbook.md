@@ -24,15 +24,19 @@ strings may be copied into the change record.
 
 ## 1. Fixed source and image identity chain
 
-Runtime source is exactly `6eb90bbc3d2cb850194d223f66805e0e3c19feec`,
-the direct C1 child containing the idempotent inference-constraint fix. Do not
-build from the ordinary workspace, which contains C2 research changes.
+API runtime source is `6eb90bbc3d2cb850194d223f66805e0e3c19feec`; Web is the
+audited C1/`6eb90bb` Web artifact; Edge runtime source is `1d13bc8` (`fix:
+enforce single writer ownership for edge state`). The Edge-only commit adds
+ownership protection and does not alter API/Web, ML models, lease semantics,
+or Phase B/C/D. Do not build from the ordinary workspace containing C2 work.
 
 | Component | Platform | source image ID |
 | --- | --- | --- |
 | API | `linux/amd64` | `sha256:b5ea8ecbd6df7276a94cb8abf357b0ade629d2560792a3703fdff0e6d77d0ae6` |
 | Web | `linux/amd64` | `sha256:21276fb2ef65ad108ad61a3c4ff937e015b07f303a01663803050254ea9a0753` |
-| Edge | `linux/arm64` | `sha256:676f40baf3d7d775f52702af96585516afe4a390a58b5ec7bd873fe0cf85badf` |
+| Edge | `linux/arm64` | `sha256:f0284dee673fc229145e9f8b5b68000ed7e7993a6ce361493323be3d136375bc` |
+
+The prior Edge image `sha256:676f40baf3d7d775f52702af96585516afe4a390a58b5ec7bd873fe0cf85badf` is **superseded and not deployable**. The candidate Edge Dockerfile SHA-256 is `03759798f580f6faa37d65b6176f4f76a6b0bbbb7959dc716780a81b1ede8c66`; Edge source tree is `85f7a374615b8c4cea63abc17f36ec7ee1e0cbb7`. Before deployment, establish its image-to-archive SHA-256-to-transferred archive-to-destination image-ID chain.
 
 Use archive transfer, not a tag-only registry pull. On the isolated builder,
 the API archive was successfully saved/loaded, measured 1.2 GiB, and had
@@ -182,6 +186,14 @@ a named local volume, not temporary container storage. Before state work,
 verify one or zero stopped Edge containers and **zero running writers** for
 `edge-pi-01`; verify broker/API/database no-write evidence again.
 
+`flock` only protects processes accessing the same lock file. Production must
+therefore enforce `EDGE_DEVICE_ID -> exactly one canonical persistent /state
+runtime volume`. For `edge-pi-01`, record that volume identity, require every
+future C1 instance to mount it, and prohibit a second normal state volume,
+container-local state, deletion, rollback, or replacement to bypass ownership.
+Lost or ambiguous volume identity is No-Go: stop writers, read fresh DB
+high-water, and use controlled recovery rather than starting Edge.
+
 Read fresh `M` from production at execution time, never from this document:
 
 ```sql
@@ -246,6 +258,12 @@ Before and after start, run the runtime writer-count gate. It must return
 exactly one only after C1 starts; two or more is immediate No-Go and requires
 stopping `edge-agent-c1` without touching state.
 
+`SingleWriterLock` acquires a per-device non-blocking persistent-volume flock
+before `SequenceAllocator`, MQTT, heartbeat, or replay. A duplicate exits
+non-zero with `single writer lock already held`, without allocator entry or
+sequence-state modification. Docker writer count remains defense-in-depth, not
+the primary correctness mechanism.
+
 ```bash
 docker ps -q --filter label=com.docker.compose.service=edge-agent \
   --filter label=oilwell.device_id=edge-pi-01 | wc -l
@@ -264,9 +282,11 @@ docker inspect --format '{{.State.Status}}|{{.State.FinishedAt}}' edge-agent-c1
 docker volume inspect "$EDGE_STATE_VOLUME"
 ```
 
-Never remove the volume, lower `reserved_until`, or start old Edge replay.
+Never remove the canonical volume, lock file, or state to "unlock"; never lower
+`reserved_until`, switch to a second state volume, or start old Edge replay.
+Kernel flock releases on process exit; lock-file presence is not ownership.
 
-## 7. Non-production validation record and blocking finding
+## 7. Non-production validation record and resolved ownership gate
 
 The following operations were exercised with isolated Docker names/network and
 no production mount, credential, host, or telemetry:
@@ -281,14 +301,15 @@ no production mount, credential, host, or telemetry:
   persistence across Edge stop passed. The umask-wrapped Edge command left the
   state file mode `0600`.
 
-**Blocking finding:** C1 `SequenceAllocator` has no inter-process ownership
-lock. In isolation, a second Edge with the same device label could start and
-advance the shared state; the writer-count command detects this only after it
-exists. Therefore the duplicate-writer requirement is **not fail-closed** and
-this Runbook is not eligible for production Edge deployment until a separately
-approved code/runtime ownership control is implemented and revalidated. API and
-Web planning remains usable, but the full sequence through Edge must stop at
-this No-Go.
+**Resolved:** `1d13bc8` adds the actual `SingleWriterLock` implementation:
+per-device `LOCK_EX | LOCK_NB` flock on persistent `/state`, held for the
+process lifetime before allocator/MQTT/heartbeat/replay. Container A acquired
+the lock on a shared named volume; B with the same device exited non-zero with
+`single writer lock already held`, did not enter the allocator, and left
+`sequence.json` SHA-256 unchanged. After abnormal A termination, C acquired
+the same flock and advanced `reserved_until` from `1789289816242248` to
+`1789289862298957`. These are isolation evidence only, never production
+initialization values. Separate device IDs held separate locks concurrently.
 
 ## 8. Final Go/No-Go checklist
 
@@ -298,10 +319,12 @@ this No-Go.
 - [ ] Exact model hashes/read-only mounts verified.
 - [ ] API startup catalog/OID/no-write/health/resource gates pass.
 - [ ] Web historical-data gate passes or Web-only rollback completed.
-- [ ] Pi runtime capture uniquely identifies Edge configuration and volume.
+- [ ] Edge image source is `1d13bc8` and identity matches the approved candidate.
+- [ ] Canonical persistent `/state` volume identity is fixed for `edge-pi-01`.
+- [ ] Single-writer flock is applicable and validated; writer count before start is 0.
 - [ ] State initialization uses fresh `M`, valid `U`, atomic/fsync helper, and reread.
-- [ ] **Blocked:** duplicate-writer fail-closed control implemented and separately validated before any C1 Edge start.
+- [ ] Edge startup acquires writer lock; writer count after start is 1.
+- [ ] `reserved_until` advances monotonically; replay remains stopped; telemetry remains unchanged.
 
-Without the final item, do not initialize production `/state`, start C1 Edge,
-or enter replay. A 240-point replay always requires another independent
-authorization.
+All Edge checklist items remain mandatory. A 240-point replay always requires
+another independent authorization.
