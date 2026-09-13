@@ -97,11 +97,48 @@ Preflight A
 psql "$PROD_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c 'SELECT version(), current_database(), current_user, now();'
 psql "$PROD_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT pg_size_pretty(pg_database_size(current_database())) AS database_size;"
 df -h
-docker compose ps
+docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}'
 docker stats --no-stream
 ```
 
-`docker compose ps` 和 `docker stats` 只是在确认状态；必须使用生产环境实际、已批准的 Compose 项目上下文。若无法安全地识别该上下文，停止，不猜测服务名或执行部署命令。
+`docker ps` 和 `docker stats` 只是在确认状态；不得为读取状态而解析 Compose 文件。若无法安全地识别运行中的 API 容器，停止，不猜测服务名或执行部署命令。
+
+### 经审核可执行只读 Docker runtime 查询：固定旧 API 容器身份
+
+Preflight A 必须从 Docker runtime labels 识别目标，而不是依赖容器名或 Compose 文件。以下命令必须返回**恰好一个** running API container；将输出的 container ID、name、image、image ID、labels 和 started/running 状态写入本次受控审计记录，并固定 `API_CONTAINER_ID` 与 `API_IMAGE_ID` 供 Stop Writes 使用。
+
+```bash
+set -o errexit -o nounset -o pipefail
+
+api_container_ids="$(docker ps -q \
+  --filter 'label=com.docker.compose.project=infra' \
+  --filter 'label=com.docker.compose.service=api')"
+if [ -z "$api_container_ids" ]; then
+  api_container_count=0
+else
+  api_container_count="$(printf '%s\n' "$api_container_ids" | wc -l | tr -d ' ')"
+fi
+
+if [ "$api_container_count" -ne 1 ]; then
+  echo "No-Go: expected exactly one running infra/api container; found $api_container_count" >&2
+  exit 1
+fi
+
+API_CONTAINER_ID="$(docker inspect --format '{{.Id}}' "$api_container_ids")"
+API_IMAGE_ID="$(docker inspect --format '{{.Image}}' "$API_CONTAINER_ID")"
+
+docker inspect --format \
+  'container_id={{.Id}}|name={{.Name}}|image={{.Config.Image}}|image_id={{.Image}}|project={{index .Config.Labels "com.docker.compose.project"}}|service={{index .Config.Labels "com.docker.compose.service"}}|running={{.State.Running}}|started_at={{.State.StartedAt}}' \
+  "$API_CONTAINER_ID"
+
+for runtime_container_id in $(docker ps -q --filter 'label=com.docker.compose.project=infra'); do
+  docker inspect --format \
+    'container_id={{.Id}}|name={{.Name}}|image_id={{.Image}}|project={{index .Config.Labels "com.docker.compose.project"}}|service={{index .Config.Labels "com.docker.compose.service"}}|running={{.State.Running}}|started_at={{.State.StartedAt}}' \
+    "$runtime_container_id"
+done
+```
+
+The recorded result must show `project=infra`、`service=api`、`running=true`。0 个或多个容器、缺失/不匹配 label、或无法记录 image/container identity 均为 No-Go。容器名只能作为审计辅助信息，不能作为 stop target。
 
 ### 经审核可执行只读 SQL：迁移前数据库断言与数据基线
 
@@ -227,14 +264,48 @@ HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其�
 3. **保持旧 API 与 MQTT 短暂运行以排空。** 不停止 PostgreSQL，也不重启旧 API。记录停止请求、最后一条接受的 telemetry、观察开始时间和 API/broker 日志。
 4. **Drain / Stable Verification。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复运行下列 Drain snapshot，记录 telemetry 总行数、每个 device 的 count/max(sequence) 与活跃 telemetry 写入事务数；所有值必须连续稳定。
 5. **确认 broker 无相关积压或 retained telemetry。** 必须由 broker 运营证据确认：相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压，且不存在会在后续连接时重放的会话消息。
-6. **只停止旧 API。** 在生产环境实际、已批准的 Compose 项目上下文中执行下列命令；它只停止 `api`，不得用 restart、recreate 或 `compose up` 替代。
+6. **只停止旧 API。** 仅使用 Preflight A 已固定的 `API_CONTAINER_ID`；在 stop 前后均执行 Docker runtime identity assertion。不得重新按容器名或标签匹配后立即 stop，也不得调用 Compose。
 
    ```bash
    # 经审核可执行命令：只在前五步全部通过后运行。
-   docker compose stop api
+   # API_CONTAINER_ID and API_IMAGE_ID must be the values recorded in Preflight A.
+   set -o errexit -o nounset -o pipefail
+
+   pre_stop_identity="$(
+     docker inspect --format \
+       '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Running}}' \
+       "$API_CONTAINER_ID"
+   )"
+   expected_identity="${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|true"
+   if [ "$pre_stop_identity" != "$expected_identity" ]; then
+     echo "No-Go: API runtime identity changed since Preflight A" >&2
+     exit 1
+   fi
+   printf 'pre_stop_identity=%s\n' "$pre_stop_identity"
+
+   docker stop --time 20 "$API_CONTAINER_ID"
+
+   post_stop_identity="$(
+     docker inspect --format \
+       '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Status}}|{{.State.Running}}|{{.State.FinishedAt}}' \
+       "$API_CONTAINER_ID"
+   )"
+   printf '%s\n' "$post_stop_identity"
+   case "$post_stop_identity" in
+     "${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|exited|false|"*) ;;
+     *) echo "Abort: API container did not stop cleanly" >&2; exit 1 ;;
+   esac
+
+   for runtime_container_id in $(docker ps -q --filter 'label=com.docker.compose.project=infra'); do
+     docker inspect --format \
+       'container_id={{.Id}}|name={{.Name}}|image_id={{.Image}}|project={{index .Config.Labels "com.docker.compose.project"}}|service={{index .Config.Labels "com.docker.compose.service"}}|running={{.State.Running}}|started_at={{.State.StartedAt}}' \
+       "$runtime_container_id"
+   done
    ```
 
-7. **再次确认数据库没有 telemetry 写入。** 在 API 已停止后，再次运行本节的 Drain / Stable snapshot 并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
+   `docker stop` 在 20 秒内未成功时即 Abort。将最后的 runtime 输出与 Preflight A 比较：PostgreSQL、Mosquitto、Web 必须仍为 running 且 identity 不变；否则 Abort。不得自动执行 `docker kill`、`docker rm`、`docker start`、`docker restart`、`docker compose down`、`docker compose up`、recreate 或任何替代停止命令。
+
+7. **再次确认数据库没有 telemetry 写入。** API container 已确认 `exited/stopped` 后，再次运行本节的 Drain / Stable snapshot 并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
 
 ### 经审核可执行只读 SQL：Drain / Stable snapshot
 
@@ -313,7 +384,7 @@ PostgreSQL 16 返回：`ERROR: column reference "device_id" is ambiguous`。外�
 
 MQTT 可能因 QoS、持久会话、保留消息或客户端重连在稍后投递旧 telemetry。仅停止 Pi 进程不足以证明安全。必须由 broker 运营证据确认：对相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压、没有会在后续重启时重放的会话消息。
 
-`docker compose stop api` 后，旧 API 必须持续保持停止。不得 restart、recreate、`compose up` 或以任何方式触发旧 API lifespan。数据库迁移完成后至 C1 Controlled Deployment 前，既不恢复旧 API，也不恢复 Edge 或任何 telemetry publisher；这样既避免旧 API startup 的额外 DDL，也避免旧消息或旧 sequence 在未完成 C1 Edge state 初始化前进入数据库。
+旧 API container 已由已验证的 container ID 停止后，必须持续保持 stopped。不得 `docker start`、restart、recreate、`docker compose up` 或以任何方式触发旧 API lifespan。数据库迁移完成后至 C1 Controlled Deployment 前，既不恢复旧 API，也不恢复 Edge 或任何 telemetry publisher；这样既避免旧 API startup 的额外 DDL，也避免旧消息或旧 sequence 在未完成 C1 Edge state 初始化前进入数据库。
 
 如果无法证明上述任意一点，保持停写并判定 No-Go；不得以重启旧 API “查看健康状态”。
 
@@ -496,7 +567,7 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 
 旧 API startup 存在历史性的 `DROP CONSTRAINT` + `ADD CONSTRAINT` 风险，尤其针对 `uq_inference_telemetry_model_mode`。旧 API 的数据访问兼容性已由通过的隔离恢复库演练提供证据；本次生产迁移后**不调用旧 API 的 HTTP 接口**。
 
-迁移后只执行第 8 节的数据库级检查。旧 API 保持由 `docker compose stop api` 停止的状态，不得 restart、recreate、滚动更新或 `compose up`；这些操作会进入 lifespan 并可能执行额外 DDL。也不得恢复 Edge 或发送测试 telemetry。数据库迁移成功不等于 C1 已部署或 C1 Edge 已准备好。
+迁移后只执行第 8 节的数据库级检查。旧 API 保持由已验证 container ID 停止的状态，不得 `docker start`、restart、recreate、滚动更新或 `docker compose up`；这些操作会进入 lifespan 并可能执行额外 DDL。也不得恢复 Edge 或发送测试 telemetry。数据库迁移成功不等于 C1 已部署或 C1 Edge 已准备好。
 
 若数据库级检查出现错误、schema 异常或任何意外 DDL 迹象，保持停写并按 Abort/rollback 条件处理。
 
@@ -527,6 +598,7 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 - 备份、SHA-256、文件权限或可读性验证失败；
 - preflight 或 schema 再断言与预期不一致；
 - 无法证明 Edge/MQTT/API/其他写入者已停止，或存在 MQTT 积压/保留/重放风险；
+- Preflight A 未找到恰好一个带 `project=infra` / `service=api` labels 的 running API container，或 stop 前后 API runtime identity 与 Preflight 记录不一致；
 - lock timeout、statement timeout、DDL 错误、连接中断或提交状态不明；
 - telemetry、alarms、inference_results 行数异常；
 - 任一 device 的 sequence count/min/max 或 sequence-value signature 异常；
