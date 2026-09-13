@@ -33,7 +33,7 @@ or timeout is Abort: do not send a second signal, SIGKILL, `docker stop`,
 restart, remove, or Compose command. This procedure replaces every stop below.
 
 ```bash
-STOP_SIGNAL="$(docker inspect --format '{{.Config.StopSignal}}' "$CONTAINER_ID")"
+STOP_SIGNAL="$(docker inspect --format '{{with index .Config "StopSignal"}}{{.}}{{end}}' "$CONTAINER_ID")"
 STOP_SIGNAL="${STOP_SIGNAL:-SIGTERM}"
 case "$STOP_SIGNAL" in SIGKILL|KILL|9) exit 1;; esac
 docker kill --signal "$STOP_SIGNAL" "$CONTAINER_ID"
@@ -96,16 +96,26 @@ restart `unless-stopped`, 512 MiB memory limit, working dir `/app`, and three
 read-only model bind mounts. Web has labels `infra/web`, port
 `127.0.0.1:8085`, `infra_default`, `unless-stopped`, and a 128 MiB limit.
 
-Before Edge work, run the same sanitized capture on the registered Pi host for
-the old Edge container. Its host identity, logical/runtime volume name,
-environment names, `/data` mount, UID/GID, MQTT endpoint parameters, and
-device label must be obtained afresh. Without a uniquely identified Pi target
-and capture, Edge is No-Go.
+Before Edge work, load the protected, Git-ignored production target record at
+`docs/.local/targets/production-edge.json`. Connect only to that record's
+fixed approved endpoint; never select a host from an address scan, historical
+log, or hostname similarity, and do not try a fallback host. Read-only verify
+the record's exact machine-id hash, hostname, architecture, Docker
+availability, exactly one old Edge container, and `edge-pi-01` device ID.
+Any mismatch is No-Go. A missing `verified_wireguard_endpoint` does not permit
+inventing one: use only the record's verified endpoint and document the
+observed topology.
+
+After identity verification, run the same sanitized capture on the registered
+Pi host for the old Edge container. Its host identity, logical/runtime volume
+name, environment names, `/data` mount, UID/GID, MQTT endpoint parameters,
+and device label must be obtained afresh. Without a uniquely identified Pi
+target and capture, Edge is No-Go.
 
 ```bash
 # Approved read-only capture template; do not print environment values.
 docker inspect "$CONTAINER_ID" > "$MAINT_EVIDENCE_DIR/runtime-raw.json"
-docker inspect --format '{{.Id}}|{{.Image}}|{{.State.Status}}|{{.Path}}|{{json .Args}}|{{json .Config.Entrypoint}}|{{json .HostConfig.PortBindings}}|{{json .NetworkSettings.Networks}}|{{json .Mounts}}|{{json .HostConfig.RestartPolicy}}|{{.Config.User}}|{{.Config.WorkingDir}}|{{.HostConfig.Memory}}|{{.HostConfig.NanoCpus}}' "$CONTAINER_ID" > "$MAINT_EVIDENCE_DIR/runtime-sanitized.txt"
+docker inspect --format '{{.Id}}|{{.Name}}|{{.Image}}|{{.Config.Image}}|{{.State.Status}}|{{.State.Pid}}|{{.State.StartedAt}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.Path}}|{{json .Args}}|{{json .Config.Entrypoint}}|{{json .HostConfig.PortBindings}}|{{json .NetworkSettings.Networks}}|{{json .Mounts}}|{{json .HostConfig.RestartPolicy}}|{{.HostConfig.Memory}}|{{.HostConfig.NanoCpus}}|{{.Config.User}}|{{.Config.WorkingDir}}|{{with index .Config "StopSignal"}}{{.}}{{end}}' "$CONTAINER_ID" > "$MAINT_EVIDENCE_DIR/runtime-sanitized.txt"
 docker inspect --format '{{range .Config.Env}}{{println (index (split . "=") 0)}}{{end}}' "$CONTAINER_ID" | sort -u > "$MAINT_EVIDENCE_DIR/environment-names.txt"
 ```
 
