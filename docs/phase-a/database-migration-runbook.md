@@ -225,7 +225,7 @@ HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其�
 1. **Pi replay STOP。** 使用已批准的 Edge 控制路径停止 Pi replay，并取得实际停止状态/回执；若该路径不能给出可靠确认，由负责人员以受控方式停止 replay 进程并阻止自动重启。不要初始化 `/state`、不要改变 sequence、不要部署 C1 Edge。
 2. **停止并确认所有其他 telemetry publisher。** 明确列出并停止 HTTP 发送器、脚本、备用 Edge 与同一 `device_id` 的其他 MQTT publisher。任何一个写入者不能确认即 No-Go。
 3. **保持旧 API 与 MQTT 短暂运行以排空。** 不停止 PostgreSQL，也不重启旧 API。记录停止请求、最后一条接受的 telemetry、观察开始时间和 API/broker 日志。
-4. **Drain / Stable Verification。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复记录 telemetry 总数和每个 device 的 `max(sequence)`；所有值必须连续稳定。
+4. **Drain / Stable Verification。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复运行下列 Drain snapshot，记录 telemetry 总行数、每个 device 的 count/max(sequence) 与活跃 telemetry 写入事务数；所有值必须连续稳定。
 5. **确认 broker 无相关积压或 retained telemetry。** 必须由 broker 运营证据确认：相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压，且不存在会在后续连接时重放的会话消息。
 6. **只停止旧 API。** 在生产环境实际、已批准的 Compose 项目上下文中执行下列命令；它只停止 `api`，不得用 restart、recreate 或 `compose up` 替代。
 
@@ -234,7 +234,80 @@ HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其�
    docker compose stop api
    ```
 
-7. **再次确认数据库没有 telemetry 写入。** 在 API 已停止后，再次运行第 3 节的 telemetry count / per-device max(sequence) 查询并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
+7. **再次确认数据库没有 telemetry 写入。** 在 API 已停止后，再次运行本节的 Drain / Stable snapshot 并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
+
+### 经审核可执行只读 SQL：Drain / Stable snapshot
+
+每次观察均将完整输出追加保存到本次非 Git 审计目录。所有同名字段均有明确来源 alias；不得以临时拼接的 join 查询替代。
+
+```bash
+psql "$PROD_DATABASE_URL" -X -v ON_ERROR_STOP=1 -P pager=off <<'SQL' \
+  | tee -a "$MIGRATION_AUDIT_DIR/${MAINTENANCE_ID}-drain-stability.txt"
+BEGIN READ ONLY;
+
+WITH telemetry_total AS (
+  SELECT count(*)::bigint AS telemetry_total
+  FROM public.telemetry AS telemetry_row
+),
+per_device AS (
+  SELECT telemetry_row.device_id AS device_id,
+         count(*)::bigint AS telemetry_count,
+         max(telemetry_row.sequence) AS max_sequence
+  FROM public.telemetry AS telemetry_row
+  GROUP BY telemetry_row.device_id
+),
+active_telemetry_writes AS (
+  SELECT count(*)::bigint AS active_telemetry_write_transactions
+  FROM pg_stat_activity AS activity
+  WHERE activity.datname = current_database()
+    AND activity.state <> 'idle'
+    AND activity.pid <> pg_backend_pid()
+    AND activity.query ~* '\m(insert|update|delete)\M'
+)
+SELECT statement_timestamp() AT TIME ZONE 'UTC' AS observed_at_utc,
+       current_setting('transaction_read_only') AS transaction_read_only,
+       total.telemetry_total,
+       device.device_id,
+       device.telemetry_count,
+       device.max_sequence,
+       writes.active_telemetry_write_transactions
+FROM telemetry_total AS total
+CROSS JOIN active_telemetry_writes AS writes
+LEFT JOIN per_device AS device ON TRUE
+ORDER BY device.device_id;
+
+COMMIT;
+SQL
+```
+
+输出字段 `telemetry_total`、`device_id`、`telemetry_count`、`max_sequence` 和 `active_telemetry_write_transactions` 是稳定性比较数据；`transaction_read_only` 必须为 `on`。空 telemetry 表仍返回一行总数与写入事务计数，per-device 字段为 NULL。
+
+### Phase A.2.1 回归证据：`device_id` 歧义
+
+2026-09-13 的 Abort 来自一次**未提交、临时拼接的执行查询**，不在本 Runbook 或任何已提交运维脚本中。原 SQL 如下：
+
+```sql
+BEGIN READ ONLY;
+SELECT now() AT TIME ZONE 'UTC', count(*),
+       coalesce(string_agg(device_id || ':' || max_sequence::text, ',' ORDER BY device_id), ''),
+       (SELECT count(*) FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND state <> 'idle'
+          AND query ~* '(insert|update|delete).*telemetry')
+FROM (
+  SELECT device_id, max(sequence) AS max_sequence
+  FROM public.telemetry
+  GROUP BY device_id
+) AS devices
+CROSS JOIN public.telemetry;
+COMMIT;
+```
+
+PostgreSQL 16 返回：`ERROR: column reference "device_id" is ambiguous`。外层 `FROM` 同时包含 `devices.device_id` 与 `public.telemetry.device_id`，而 `string_agg` 的两个裸 `device_id` 未指定来源；因此 parser 不能决定应使用哪一列。该临时查询的 `CROSS JOIN` 还会在多 device 情况下放大裸 `count(*)`，不适合作为 telemetry 总行数。
+
+上方的受审核 snapshot 用 `telemetry_row`、`total`、`device`、`writes` 和 `activity` 明确限定所有可能同名字段，并用独立 aggregate CTE 保留原定的 telemetry 总行数、per-device count/max(sequence) 与稳定性比较语义。它不改变 Stop Writes、Drain 判定、Go/No-Go、DDL、OID 门禁或回滚策略。
+
+隔离验证在 PostgreSQL 16.15、生产备份派生的本地演练库中完成：3824 条 telemetry、3 个 device；查询成功返回 3 行，字段为 `observed_at_utc`、`transaction_read_only=on`、`telemetry_total=3824`、`device_id`、`telemetry_count`、`max_sequence`、`active_telemetry_write_transactions=0`。`BEGIN READ ONLY` 成功，且 `EXPLAIN (VERBOSE)` 只包含 scan、aggregate、join 与 sort 节点，没有 `ModifyTable`；未执行 DDL 或 DML。
 
 ### MQTT 积压和旧消息风险
 
