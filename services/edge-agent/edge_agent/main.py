@@ -11,6 +11,7 @@ import paho.mqtt.client as mqtt
 from .config import Settings
 from .replay import ParquetReplay
 from .sequence import SequenceAllocator
+from .single_writer import SingleWriterLock, SingleWriterLockError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -138,45 +139,58 @@ class ReplayController:
 
 def main() -> None:
     settings = Settings()
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=settings.device_id)
-    if settings.mqtt_username:
-        client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
-    if settings.mqtt_tls:
-        client.tls_set(ca_certs=settings.mqtt_ca_file)
-    client.max_queued_messages_set(256)
-    controller = ReplayController(settings, client)
-
-    def on_connect(_: mqtt.Client, __, ___, reason_code, ____):
-        logger.info("MQTT connected: %s", reason_code)
-        client.subscribe(f"{settings.mqtt_topic_prefix}/edge/{settings.device_id}/command", qos=1)
-        controller.publish_status()
-        controller.start_configured_replay_once()
-
-    def on_message(_: mqtt.Client, __, message: mqtt.MQTTMessage):
-        try:
-            controller.command(json.loads(message.payload))
-        except (json.JSONDecodeError, ValueError) as exc:
-            logger.warning("Rejected command: %s", exc)
-            try:
-                payload = json.loads(message.payload)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                payload = {}
-            with controller.lock:
-                controller.last_command = {"command_id": payload.get("command_id"), "command": payload.get("command"), "status": "rejected", "reason": str(exc)}
-            controller.publish_status()
-
-    client.on_connect, client.on_message = on_connect, on_message
-    client.connect(settings.mqtt_host, settings.mqtt_port, keepalive=60)
-    client.loop_start()
+    if settings.sequence_file is None:
+        logger.error("EDGE_SEQUENCE_FILE is required for single writer ownership")
+        raise SystemExit(2)
+    writer_lock = SingleWriterLock(settings.sequence_file.parent, settings.device_id)
     try:
-        while True:
+        writer_lock.acquire()
+    except SingleWriterLockError:
+        logger.error("single writer lock already held")
+        raise SystemExit(1) from None
+
+    try:
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=settings.device_id)
+        if settings.mqtt_username:
+            client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
+        if settings.mqtt_tls:
+            client.tls_set(ca_certs=settings.mqtt_ca_file)
+        client.max_queued_messages_set(256)
+        controller = ReplayController(settings, client)
+
+        def on_connect(_: mqtt.Client, __, ___, reason_code, ____):
+            logger.info("MQTT connected: %s", reason_code)
+            client.subscribe(f"{settings.mqtt_topic_prefix}/edge/{settings.device_id}/command", qos=1)
             controller.publish_status()
-            time.sleep(settings.heartbeat_seconds)
-    except KeyboardInterrupt:
-        pass
+            controller.start_configured_replay_once()
+
+        def on_message(_: mqtt.Client, __, message: mqtt.MQTTMessage):
+            try:
+                controller.command(json.loads(message.payload))
+            except (json.JSONDecodeError, ValueError) as exc:
+                logger.warning("Rejected command: %s", exc)
+                try:
+                    payload = json.loads(message.payload)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    payload = {}
+                with controller.lock:
+                    controller.last_command = {"command_id": payload.get("command_id"), "command": payload.get("command"), "status": "rejected", "reason": str(exc)}
+                controller.publish_status()
+
+        client.on_connect, client.on_message = on_connect, on_message
+        client.connect(settings.mqtt_host, settings.mqtt_port, keepalive=60)
+        client.loop_start()
+        try:
+            while True:
+                controller.publish_status()
+                time.sleep(settings.heartbeat_seconds)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            client.loop_stop()
+            client.disconnect()
     finally:
-        client.loop_stop()
-        client.disconnect()
+        writer_lock.release()
 
 
 if __name__ == "__main__":
