@@ -105,7 +105,7 @@ docker stats --no-stream
 
 ### 经审核可执行只读 Docker runtime 查询：固定旧 API 容器身份
 
-Preflight A 必须从 Docker runtime labels 识别目标，而不是依赖容器名或 Compose 文件。以下命令必须返回**恰好一个** running API container；将输出的 container ID、name、image、image ID、labels 和 started/running 状态写入本次受控审计记录，并固定 `API_CONTAINER_ID` 与 `API_IMAGE_ID` 供 Stop Writes 使用。
+Preflight A 必须从 Docker runtime labels 识别目标，而不是依赖容器名或 Compose 文件。以下命令必须返回**恰好一个** running API container；将输出的 container ID、name、image、image ID、labels、started/running state、PID 和 StopSignal 写入本次受控审计记录，并固定 `API_CONTAINER_ID`、`API_IMAGE_ID`、`API_CONTAINER_PID` 与 `API_STOP_SIGNAL` 供 Stop Writes 使用。
 
 ```bash
 set -o errexit -o nounset -o pipefail
@@ -126,10 +126,29 @@ fi
 
 API_CONTAINER_ID="$(docker inspect --format '{{.Id}}' "$api_container_ids")"
 API_IMAGE_ID="$(docker inspect --format '{{.Image}}' "$API_CONTAINER_ID")"
+API_CONTAINER_PID="$(docker inspect --format '{{.State.Pid}}' "$API_CONTAINER_ID")"
+API_CONFIG_STOP_SIGNAL="$(docker inspect --format '{{.Config.StopSignal}}' "$API_CONTAINER_ID")"
+API_STOP_SIGNAL="$API_CONFIG_STOP_SIGNAL"
+if [ -z "$API_STOP_SIGNAL" ]; then
+  API_STOP_SIGNAL=SIGTERM
+fi
+API_STOP_SIGNAL_UPPER="$(printf '%s' "$API_STOP_SIGNAL" | tr '[:lower:]' '[:upper:]')"
+if [ "$API_CONTAINER_PID" -le 0 ]; then
+  echo "No-Go: API container has no running PID" >&2
+  exit 1
+fi
+case "$API_STOP_SIGNAL_UPPER" in
+  SIGKILL|KILL|9)
+    echo "No-Go: API StopSignal must not be SIGKILL" >&2
+    exit 1
+    ;;
+esac
 
 docker inspect --format \
-  'container_id={{.Id}}|name={{.Name}}|image={{.Config.Image}}|image_id={{.Image}}|project={{index .Config.Labels "com.docker.compose.project"}}|service={{index .Config.Labels "com.docker.compose.service"}}|running={{.State.Running}}|started_at={{.State.StartedAt}}' \
+  'container_id={{.Id}}|name={{.Name}}|image={{.Config.Image}}|image_id={{.Image}}|project={{index .Config.Labels "com.docker.compose.project"}}|service={{index .Config.Labels "com.docker.compose.service"}}|running={{.State.Running}}|pid={{.State.Pid}}|configured_stop_signal={{.Config.StopSignal}}|started_at={{.State.StartedAt}}' \
   "$API_CONTAINER_ID"
+printf 'api_stop_signal=%s|configured_stop_signal=%s|api_pid=%s\n' \
+  "$API_STOP_SIGNAL" "$API_CONFIG_STOP_SIGNAL" "$API_CONTAINER_PID"
 
 for runtime_container_id in $(docker ps -q --filter 'label=com.docker.compose.project=infra'); do
   docker inspect --format \
@@ -264,37 +283,60 @@ HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其�
 3. **保持旧 API 与 MQTT 短暂运行以排空。** 不停止 PostgreSQL，也不重启旧 API。记录停止请求、最后一条接受的 telemetry、观察开始时间和 API/broker 日志。
 4. **Drain / Stable Verification。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复运行下列 Drain snapshot，记录 telemetry 总行数、每个 device 的 count/max(sequence) 与活跃 telemetry 写入事务数；所有值必须连续稳定。
 5. **确认 broker 无相关积压或 retained telemetry。** 必须由 broker 运营证据确认：相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压，且不存在会在后续连接时重放的会话消息。
-6. **只停止旧 API。** 仅使用 Preflight A 已固定的 `API_CONTAINER_ID`；在 stop 前后均执行 Docker runtime identity assertion。不得重新按容器名或标签匹配后立即 stop，也不得调用 Compose。
+6. **只停止旧 API。** 仅使用 Preflight A 已固定的 `API_CONTAINER_ID` 和 `API_STOP_SIGNAL`；在 signal 前后均执行 Docker runtime identity assertion。不得重新按容器名或标签匹配后立即 stop，也不得调用 Compose。
 
    ```bash
    # 经审核可执行命令：只在前五步全部通过后运行。
-   # API_CONTAINER_ID and API_IMAGE_ID must be the values recorded in Preflight A.
+   # API_CONTAINER_ID, API_IMAGE_ID, API_CONTAINER_PID, and API_STOP_SIGNAL
+   # must be the values recorded in Preflight A.
    set -o errexit -o nounset -o pipefail
 
    pre_stop_identity="$(
      docker inspect --format \
-       '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Running}}' \
+       '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Running}}|{{.State.Pid}}' \
        "$API_CONTAINER_ID"
    )"
-   expected_identity="${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|true"
+   expected_identity="${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|true|${API_CONTAINER_PID}"
    if [ "$pre_stop_identity" != "$expected_identity" ]; then
      echo "No-Go: API runtime identity changed since Preflight A" >&2
      exit 1
    fi
    printf 'pre_stop_identity=%s\n' "$pre_stop_identity"
 
-   docker stop --time 20 "$API_CONTAINER_ID"
-
-   post_stop_identity="$(
-     docker inspect --format \
-       '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Status}}|{{.State.Running}}|{{.State.FinishedAt}}' \
-       "$API_CONTAINER_ID"
-   )"
-   printf '%s\n' "$post_stop_identity"
-   case "$post_stop_identity" in
-     "${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|exited|false|"*) ;;
-     *) echo "Abort: API container did not stop cleanly" >&2; exit 1 ;;
+   case "$(printf '%s' "$API_STOP_SIGNAL" | tr '[:lower:]' '[:upper:]')" in
+     SIGKILL|KILL|9)
+       echo "No-Go: SIGKILL is not an allowed API stop signal" >&2
+       exit 1
+       ;;
    esac
+
+   API_STOP_STARTED_AT_EPOCH="$(date +%s)"
+   docker kill --signal "$API_STOP_SIGNAL" "$API_CONTAINER_ID"
+
+   api_stop_succeeded=false
+   for stop_elapsed_seconds in $(seq 1 20); do
+     sleep 1
+     post_stop_identity="$(
+       docker inspect --format \
+         '{{.Id}}|{{.Image}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.service"}}|{{.State.Status}}|{{.State.Running}}|{{.State.FinishedAt}}' \
+         "$API_CONTAINER_ID"
+     )"
+     printf 'stop_observation_seconds=%s|%s\n' "$stop_elapsed_seconds" "$post_stop_identity"
+     case "$post_stop_identity" in
+       "${API_CONTAINER_ID}|${API_IMAGE_ID}|infra|api|exited|false|"*)
+         API_STOP_FINISHED_AT_EPOCH="$(date +%s)"
+         API_GRACEFUL_SHUTDOWN_LATENCY_SECONDS="$((API_STOP_FINISHED_AT_EPOCH - API_STOP_STARTED_AT_EPOCH))"
+         printf 'graceful_shutdown_latency_seconds=%s\n' "$API_GRACEFUL_SHUTDOWN_LATENCY_SECONDS"
+         api_stop_succeeded=true
+         break
+         ;;
+     esac
+   done
+
+   if [ "$api_stop_succeeded" != true ]; then
+     echo "Abort: API remains running after 20 seconds; no SIGKILL or alternate signal sent" >&2
+     exit 1
+   fi
 
    for runtime_container_id in $(docker ps -q --filter 'label=com.docker.compose.project=infra'); do
      docker inspect --format \
@@ -303,7 +345,7 @@ HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其�
    done
    ```
 
-   `docker stop` 在 20 秒内未成功时即 Abort。将最后的 runtime 输出与 Preflight A 比较：PostgreSQL、Mosquitto、Web 必须仍为 running 且 identity 不变；否则 Abort。不得自动执行 `docker kill`、`docker rm`、`docker start`、`docker restart`、`docker compose down`、`docker compose up`、recreate 或任何替代停止命令。
+   `docker kill --signal "$API_STOP_SIGNAL"` 在此仅是发送已经由 runtime inspect 确认的正常终止 signal 的 Docker CLI 接口；它不是强杀。发送 signal 失败即 Abort。每秒 runtime inspect，20 秒内未出现 `running=false` 且 `status=exited` 即 Abort，并记录最后状态。不得自动发送不带 `--signal` 的 `docker kill`、`SIGKILL`、第二种 signal、`docker stop`、`docker rm`、`docker start`、`docker restart`、`docker compose down`、`docker compose up`、recreate 或任何替代停止命令。将最后的 runtime 输出与 Preflight A 比较：PostgreSQL、Mosquitto、Web 必须仍为 running 且 identity 不变；否则 Abort。
 
 7. **再次确认数据库没有 telemetry 写入。** API container 已确认 `exited/stopped` 后，再次运行本节的 Drain / Stable snapshot 并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
 
@@ -599,6 +641,7 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 - preflight 或 schema 再断言与预期不一致；
 - 无法证明 Edge/MQTT/API/其他写入者已停止，或存在 MQTT 积压/保留/重放风险；
 - Preflight A 未找到恰好一个带 `project=infra` / `service=api` labels 的 running API container，或 stop 前后 API runtime identity 与 Preflight 记录不一致；
+- API StopSignal 为 SIGKILL、signal 发送失败，或 API 在 20 秒观察窗口结束时仍非 `exited`；
 - lock timeout、statement timeout、DDL 错误、连接中断或提交状态不明；
 - telemetry、alarms、inference_results 行数异常；
 - 任一 device 的 sequence count/min/max 或 sequence-value signature 异常；
