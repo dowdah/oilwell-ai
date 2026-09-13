@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import asyncio
 import logging
+import math
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -61,6 +63,7 @@ class XGBoostAdapter(ModelAdapter):
         from xgboost import XGBClassifier
         model = XGBClassifier()
         model.load_model(directory / metadata["artifact_file"])
+        model.set_params(n_jobs=1)
         return cls(metadata, model)
 
     def predict(self, samples: list[dict[str, Any]]) -> tuple[str, float, float]:
@@ -79,6 +82,9 @@ class TCNAdapter(ModelAdapter):
     def load(cls, directory: Path, metadata: dict[str, Any]) -> "TCNAdapter":
         import sys
         import torch
+        # Serving uses one small window per call; avoid competing native
+        # thread pools and excessive OpenMP fan-out on the small ECS host.
+        torch.set_num_threads(1)
         try:
             from oilwell_ml.tcn import TCNConfig, build_tcn
             from oilwell_ml.tcn_data import StandardScaler
@@ -156,8 +162,23 @@ class InferenceRuntime:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.windows: dict[str, deque[dict[str, Any]]] = {}
+        self.last_inference: dict[str, datetime] = {}
+        self._async_lock = asyncio.Lock()
         self.active = ModelSlot("active", settings.inference_model_dir)
         self.shadow = ModelSlot("shadow", settings.shadow_inference_model_dir)
+
+    async def add_async(self, well_id: str, timestamp: datetime, measurements: dict[str, float]) -> list[InferenceOutcome]:
+        # Keep window updates ordered while native model execution leaves the
+        # HTTP/WebSocket/MQTT event loop available to serve control requests.
+        async with self._async_lock:
+            worker = asyncio.create_task(asyncio.to_thread(self.add, well_id, timestamp, measurements))
+            try:
+                return await asyncio.shield(worker)
+            except asyncio.CancelledError:
+                # Cancellation cannot stop a native worker. Keep ownership of
+                # the shared window until that worker has actually finished.
+                await worker
+                raise
 
     @property
     def status(self) -> str:
@@ -202,11 +223,25 @@ class InferenceRuntime:
             raise ValueError("unsupported model type")
 
     def add(self, well_id: str, timestamp: datetime, measurements: dict[str, float]) -> list[InferenceOutcome]:
-        samples = self.windows.setdefault(well_id, deque())
+        samples = self.windows.setdefault(well_id, deque(maxlen=self.settings.telemetry_window_seconds))
+        valid = set(measurements) == set(CORE_VARIABLES) and all(math.isfinite(value) for value in measurements.values())
+        if not valid:
+            samples.clear()
+            self.last_inference.pop(well_id, None)
+            return [InferenceOutcome(status="invalid_schema", model_type="xgboost" if slot.mode == "active" else "tcn",
+                                     model_mode=slot.mode) for slot in (self.active, self.shadow)]
+        # The model contract is 180 consecutive 1 Hz rows (179 seconds span).
+        # Replay changes, gaps, duplicate timestamps and backwards time restart
+        # warmup; they must never create a mixed-instance or sparse window.
+        if samples and (timestamp - samples[-1]["timestamp"]).total_seconds() != 1:
+            samples.clear()
+            self.last_inference.pop(well_id, None)
         samples.append({"timestamp": timestamp, "measurements": measurements})
-        cutoff = timestamp.timestamp() - self.settings.telemetry_window_seconds
-        while samples and samples[0]["timestamp"].timestamp() < cutoff:
-            samples.popleft()
+        if len(samples) == self.settings.telemetry_window_seconds:
+            previous = self.last_inference.get(well_id)
+            if previous is not None and (timestamp - previous).total_seconds() < 10:
+                return []
+            self.last_inference[well_id] = timestamp
         return [self._outcome(slot, list(samples)) for slot in (self.active, self.shadow)]
 
     def _outcome(self, slot: ModelSlot, samples: list[dict[str, Any]]) -> InferenceOutcome:
@@ -221,5 +256,9 @@ class InferenceRuntime:
         if end.timestamp() - start.timestamp() < self.settings.telemetry_window_seconds - 1:
             return InferenceOutcome(status="warming_up", **common)
         started = time.perf_counter()
-        predicted, confidence, anomaly_score = slot.adapter.predict(samples)
+        try:
+            predicted, confidence, anomaly_score = slot.adapter.predict(samples)
+        except Exception:
+            logger.exception("%s inference failed for model %s", slot.mode, metadata["version"])
+            return InferenceOutcome(status="model_unavailable", **common)
         return InferenceOutcome(status="predicted", predicted_class=predicted, confidence=confidence, anomaly_score=anomaly_score, latency_ms=(time.perf_counter() - started) * 1000, **common)

@@ -14,10 +14,10 @@ async def process_telemetry(session: AsyncSession, packet: TelemetryIn) -> Telem
         session.add(Well(id=packet.well_id, display_name=packet.well_id))
     device = await session.get(EdgeDevice, packet.device_id)
     if device is None:
-        device = EdgeDevice(id=packet.device_id, status="REPLAYING", last_heartbeat=packet.timestamp)
+        device = EdgeDevice(id=packet.device_id, status="REPLAYING", last_heartbeat=datetime.now(timezone.utc))
         session.add(device)
     else:
-        device.status, device.last_heartbeat = "REPLAYING", packet.timestamp
+        device.status, device.last_heartbeat = "REPLAYING", datetime.now(timezone.utc)
 
     values = packet.measurements
     row = Telemetry(
@@ -89,11 +89,23 @@ async def persist_inferences(
                 session.add(alarm)
                 await session.flush()
                 state.armed, state.active_alarm_id = False, alarm.id
-        else:
+        elif active.predicted_class == "Normal":
             state.abnormal_streak = 0
             state.normal_streak += 1
             if state.normal_streak >= recovery_windows:
+                if state.active_alarm_id is not None:
+                    resolved = await session.get(Alarm, state.active_alarm_id)
+                    if resolved is not None:
+                        resolved.status = "RESOLVED"
+                        resolved.resolved_at = datetime.now(timezone.utc)
                 state.armed, state.active_alarm_id = True, None
+        else:
+            # An uncertain abnormal prediction is not evidence of Normal recovery.
+            state.abnormal_streak, state.normal_streak = 0, 0
+    elif active:
+        state = await session.get(AlarmState, telemetry.well_id)
+        if state is not None:
+            state.abnormal_streak, state.normal_streak = 0, 0
     await session.commit()
     for result in results:
         await session.refresh(result)
@@ -116,6 +128,8 @@ async def acknowledge_alarm(session: AsyncSession, alarm_id: int) -> Alarm | Non
     alarm = await session.get(Alarm, alarm_id)
     if alarm is None:
         return None
+    if alarm.status != "UNACKNOWLEDGED":
+        return alarm
     alarm.status = "ACKNOWLEDGED"
     alarm.acknowledged_at = datetime.now(timezone.utc)
     await session.commit()

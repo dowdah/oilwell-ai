@@ -12,6 +12,7 @@ class Settings:
     device_id: str = os.getenv("EDGE_DEVICE_ID", "edge-pi-01")
     well_id: str = os.getenv("EDGE_WELL_ID", "WELL-00014")
     data_dir: Path = Path(os.getenv("EDGE_DATA_DIR", "/data"))
+    sequence_file: Path | None = Path(os.environ["EDGE_SEQUENCE_FILE"]) if os.getenv("EDGE_SEQUENCE_FILE") else None
     replay_file: str | None = os.getenv("EDGE_REPLAY_FILE")
     replay_speed: int = int(os.getenv("EDGE_REPLAY_SPEED", "10"))
     # Demo-only local bootstrap. It deliberately does not publish a command to

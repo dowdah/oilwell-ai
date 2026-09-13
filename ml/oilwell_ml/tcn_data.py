@@ -5,8 +5,10 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
+import random
 from typing import Iterable, Iterator, Sequence
 
+from .windows import labelled_rows, labelled_windows
 from .features import CORE_VARIABLES
 from .manifest import LABEL_COLUMNS, VARIABLE_ALIASES
 
@@ -40,60 +42,16 @@ class StandardScaler:
         return cls(tuple(float(item) for item in mean), tuple(float(item) for item in std))
 
 
-def _mapping(path: Path) -> dict[str, str]:
-    import pyarrow.parquet as pq
-
-    columns = set(pq.ParquetFile(path).schema.names)
-    mapping = {target: next((name for name in aliases if name in columns), None) for target, aliases in VARIABLE_ALIASES.items()}
-    missing = [target for target, source in mapping.items() if source is None]
-    if missing:
-        raise ValueError(f"{path.name} is missing required variables: {', '.join(missing)}")
-    return {target: source for target, source in mapping.items() if source is not None}
-
-
 def iter_rows(path: Path, target_labels: Sequence[str]) -> Iterator[dict[str, float]]:
-    """Read Parquet batches one at a time and never fill missing signals silently."""
-    import pyarrow.parquet as pq
-
-    mapping = _mapping(path)
-    parquet = pq.ParquetFile(path)
-    label_column = next((name for name in LABEL_COLUMNS if name in parquet.schema.names), None)
-    if label_column is None:
-        raise ValueError(f"{path.name} is missing its observation label column")
-    allowed_labels = set(map(str, target_labels))
-    for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label_column]):
-        for row in batch.to_pylist():
-            if str(row[label_column]) not in allowed_labels or any(row[source] is None for source in mapping.values()):
-                continue
-            yield {target: float(row[source]) for target, source in mapping.items()}
+    for observation in labelled_rows(path, target_labels):
+        if observation is not None:
+            yield observation[1]
 
 
 def iter_windows(items: Iterable[dict], data_root: Path, window_size: int = 180, stride: int = 10) -> Iterator[tuple[list[dict[str, float]], int]]:
-    """Generate windows on demand; only the current 180-row deque stays in memory."""
     for item in items:
-        label = int(item["label"])
-        observation_labels = item.get("observation_labels", [str(label)])
-        allowed_labels = set(map(str, observation_labels))
-        buffer: deque[dict[str, float]] = deque(maxlen=window_size)
-        complete_rows = 0
-        path = data_root / item["source_path"]
-        mapping = _mapping(path)
-        import pyarrow.parquet as pq
-
-        parquet = pq.ParquetFile(path)
-        label_column = next((name for name in LABEL_COLUMNS if name in parquet.schema.names), None)
-        if label_column is None:
-            raise ValueError(f"{path.name} is missing its observation label column")
-        for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label_column]):
-            for row in batch.to_pylist():
-                if str(row[label_column]) not in allowed_labels or any(row[source] is None for source in mapping.values()):
-                    buffer.clear()
-                    complete_rows = 0
-                    continue
-                buffer.append({target: float(row[source]) for target, source in mapping.items()})
-                complete_rows += 1
-                if len(buffer) == window_size and (complete_rows - window_size) % stride == 0:
-                    yield list(buffer), label
+        for window in labelled_windows(data_root / item["source_path"], item.get("observation_labels", [item["label"]]), window_size, stride):
+            yield window, int(item["label"])
 
 
 def fit_scaler(items: Iterable[dict], data_root: Path) -> StandardScaler:
@@ -118,12 +76,29 @@ def fit_scaler(items: Iterable[dict], data_root: Path) -> StandardScaler:
 class StreamingWindowDataset(IterableDataset):
     """A PyTorch-compatible iterable dataset that streams Parquet every epoch."""
 
-    def __init__(self, items: list[dict], data_root: Path, scaler: StandardScaler, window_size: int = 180, stride: int = 10) -> None:
+    def __init__(self, items: list[dict], data_root: Path, scaler: StandardScaler, window_size: int = 180, stride: int = 10, shuffle_seed: int | None = None) -> None:
         self.items, self.data_root, self.scaler = items, data_root, scaler
         self.window_size, self.stride = window_size, stride
+        self.shuffle_seed, self.epoch = shuffle_seed, 0
+
+    def ordered_windows(self):
+        if self.shuffle_seed is None:
+            yield from iter_windows(self.items, self.data_root, self.window_size, self.stride)
+            return
+        # Interleave source instances instead of presenting one class for
+        # thousands of consecutive steps. Each window appears exactly once.
+        rng = random.Random(self.shuffle_seed + self.epoch)
+        self.epoch += 1
+        streams = [iter(iter_windows([item], self.data_root, self.window_size, self.stride)) for item in self.items]
+        while streams:
+            index = rng.randrange(len(streams))
+            try:
+                yield next(streams[index])
+            except StopIteration:
+                streams.pop(index)
 
     def __iter__(self):
         import torch
 
-        for window, label in iter_windows(self.items, self.data_root, self.window_size, self.stride):
+        for window, label in self.ordered_windows():
             yield torch.tensor(self.scaler.transform(window), dtype=torch.float32), torch.tensor(label, dtype=torch.long)

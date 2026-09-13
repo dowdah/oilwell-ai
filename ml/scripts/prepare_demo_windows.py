@@ -11,17 +11,15 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pyarrow.parquet as pq
 
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from oilwell_ml.features import CORE_VARIABLES, FEATURE_NAMES, window_features
-from oilwell_ml.manifest import LABEL_COLUMNS, VARIABLE_ALIASES
+from oilwell_ml.windows import labelled_window_records
 
 TIMESTAMP_COLUMNS = ("timestamp", "TIMESTAMP", "time", "TIME")
 TARGETS = ("0", "3", "4", "9")
@@ -35,45 +33,16 @@ def timestamp(value: object) -> str:
 
 def first_window(item: dict, data_root: Path, window_size: int) -> dict:
     path = data_root / item["source_path"]
-    parquet = pq.ParquetFile(path)
-    available = set(parquet.schema.names)
-    mapping = {
-        target: next((name for name in aliases if name in available), None)
-        for target, aliases in VARIABLE_ALIASES.items()
-    }
-    missing = [target for target, source in mapping.items() if source is None]
-    if missing:
-        raise ValueError(f"{path.name} is missing required variables: {', '.join(missing)}")
-    timestamp_column = next((name for name in TIMESTAMP_COLUMNS if name in available), None)
-    if timestamp_column is None:
-        raise ValueError(f"{path.name} has no supported timestamp column")
-    label_column = next((name for name in LABEL_COLUMNS if name in available), None)
-    if label_column is None:
-        raise ValueError(f"{path.name} has no supported label column")
-
-    rows: deque[tuple[str, dict[str, float]]] = deque(maxlen=window_size)
-    columns = [*mapping.values(), timestamp_column, label_column]
-    for batch in parquet.iter_batches(batch_size=4096, columns=columns):
-        for row in batch.to_pylist():
-            if str(row[label_column]) not in item.get("observation_labels", [item["label"]]) or any(row[source] is None for source in mapping.values()):
-                rows.clear()
-                continue
-            rows.append((timestamp(row[timestamp_column]), {
-                target: float(row[source]) for target, source in mapping.items()
-            }))
-            if len(rows) == window_size:
-                measurements = [values for _, values in rows]
-                features = dict(zip(FEATURE_NAMES, window_features(measurements), strict=True))
-                return {
-                    "label": item["label"], "label_name": item["label_name"],
-                    "instance_id": item["instance_id"], "source_sha256": item["sha256"],
-                    "window_start": rows[0][0], "window_end": rows[-1][0],
-                    "features": features,
-                    "trend_summary": (
-                        "该脱敏 180 秒窗口由离线流程选取；"
-                        "特征贡献仅描述模型证据，需由课程审阅人结合公开资料确认。"
-                    ),
-                }
+    for rows in labelled_window_records(path, item.get("observation_labels", [item["label"]]), window_size):
+        measurements = [values for _, values in rows]
+        return {
+            "label": item["label"], "label_name": item["label_name"],
+            "well_id": item["well_id"],
+            "instance_id": item["instance_id"], "source_sha256": item["sha256"],
+            "window_start": timestamp(rows[0][0]), "window_end": timestamp(rows[-1][0]),
+            "features": dict(zip(FEATURE_NAMES, window_features(measurements), strict=True)),
+            "trend_summary": "该脱敏 180 秒窗口由离线流程选取；特征贡献仅描述模型证据，需由课程审阅人结合公开资料确认。",
+        }
     raise ValueError(f"{path.name} contains no complete {window_size}-row window")
 
 

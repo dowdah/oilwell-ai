@@ -7,6 +7,7 @@ It can only work with persisted model-result summaries and reviewed local text.
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -32,6 +33,7 @@ class InferenceSummary(Protocol):
     """The narrow result-only boundary accepted by the diagnostic service."""
 
     id: int
+    well_id: str
     telemetry_id: int
     model_type: str
     model_mode: str
@@ -68,12 +70,14 @@ class KnowledgeBase:
 
     def retrieve(self, query: str, limit: int) -> list[KnowledgeDocument]:
         terms = set(re.findall(r"[a-z0-9]+", query.lower()))
+        def score(item):
+            return len(terms & set(re.findall(r"[a-z0-9]+", " ".join((item.title, *item.tags, item.excerpt)).lower())))
         ranked = sorted(
             self.documents,
-            key=lambda item: len(terms & set(" ".join((item.title, *item.tags, item.excerpt)).lower().split())),
+            key=score,
             reverse=True,
         )
-        return [item for item in ranked[:limit] if item.excerpt]
+        return [item for item in ranked if item.excerpt and score(item) > 0][:limit]
 
 
 class ExplainabilityCatalog:
@@ -86,12 +90,15 @@ class ExplainabilityCatalog:
         path = self.directory / "explanation_manifest.json"
         if not path.is_file() or not result.window_start or not result.window_end:
             return None
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
         if payload.get("model_version") != result.model_version or payload.get("feature_schema_version") != result.feature_schema_version:
             return None
         start, end = result.window_start.isoformat(), result.window_end.isoformat()
         for item in payload.get("window_summaries", []):
-            if item.get("window_start") == start and item.get("window_end") == end:
+            if item.get("well_id") == result.well_id and item.get("window_start") == start and item.get("window_end") == end:
                 # Artifacts carry only ranked feature names/contributions and a
                 # prose trend summary. Reject anything that looks like raw data.
                 if {"top_features", "trend_summary"} <= item.keys() and "measurements" not in item:
@@ -119,8 +126,10 @@ class ControlledDiagnosticService:
         self.explanations = ExplainabilityCatalog(settings.explainability_dir)
 
     def diagnose(self, active: InferenceSummary, comparison: list[InferenceSummary]) -> DiagnosticOutput:
+        comparison = [row for row in comparison if row.telemetry_id == active.telemetry_id
+                      and row.well_id == active.well_id and row.window_start == active.window_start and row.window_end == active.window_end]
         summary = {
-            "inference_id": active.id, "telemetry_id": active.telemetry_id,
+            "inference_id": active.id, "telemetry_id": active.telemetry_id, "well_id": active.well_id,
             "window_start": active.window_start.isoformat() if active.window_start else None,
             "window_end": active.window_end.isoformat() if active.window_end else None,
             "model_type": active.model_type, "model_mode": active.model_mode,
@@ -133,13 +142,15 @@ class ControlledDiagnosticService:
         request_id = str(uuid4())
         if active.status != "predicted" or active.model_mode != "active":
             return self._refusal(request_id, summary, "该结果不是可用的 active 预测，无法形成诊断说明。")
-        if active.confidence is None or active.confidence < self.settings.diagnostic_min_confidence:
+        if active.predicted_class not in {"Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line"}:
+            return self._refusal(request_id, summary, "模型类别不在已审阅的四类教学范围内，诊断服务拒答。")
+        if active.confidence is None or not math.isfinite(active.confidence) or not self.settings.diagnostic_min_confidence <= active.confidence <= 1:
             return self._refusal(request_id, summary, "模型置信度不足，诊断服务拒绝给出事件解释。")
         sources = self.knowledge_base.retrieve(active.predicted_class or "", self.settings.diagnostic_max_sources)
         if not sources:
             return self._refusal(request_id, summary, "知识库没有可引用的公开资料，诊断服务拒答。")
         explanation = self.explanations.find(active)
-        source_lines = "；".join(f"[{item.id}] {item.title}" for item in sources)
+        source_lines = "；".join(f"[{item.id}] {item.title}：{item.excerpt}" for item in sources)
         evidence = "未找到同窗口的离线 SHAP 摘要，不能推断特征贡献。"
         explanation_version = None
         evidence_status = "degraded"

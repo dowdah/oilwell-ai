@@ -30,3 +30,22 @@ def test_tcn_has_the_required_input_output_shape_and_small_parameter_budget() ->
     assert model(torch.zeros((2, 7, 180))).shape == (2, 4)
     assert parameter_count(model) < 1_000_000
     assert preferred_device(torch).type in {"cpu", "mps"}
+
+
+def test_training_interleave_is_reproducible_complete_and_changes_each_epoch(monkeypatch):
+    import oilwell_ml.tcn_data as data
+    from pathlib import Path
+    def fake(items, *_args):
+        for item in items:
+            for index in range(10):
+                yield (item['id'], index), item['id']
+    monkeypatch.setattr(data, 'iter_windows', fake)
+    items = [{'id': i} for i in range(4)]
+    def dataset():
+        return data.StreamingWindowDataset(items, Path('.'), None, shuffle_seed=42)
+    first, second = dataset(), dataset()
+    epoch = list(first.ordered_windows())
+    assert epoch == list(second.ordered_windows())
+    assert sorted(epoch) == sorted(fake(items))
+    assert epoch != list(first.ordered_windows())
+    assert len(set(label for _, label in epoch[:8])) > 1

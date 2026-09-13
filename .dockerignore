@@ -16,3 +16,4 @@ data/
 *.joblib
 infra/certs/
 infra/mosquitto/passwords/
+docs/.local/

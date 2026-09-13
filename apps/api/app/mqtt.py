@@ -74,7 +74,7 @@ class MqttBridge:
                         event = packet.model_dump(mode="json", by_alias=True)
                         hub.add_telemetry(event)
                         await hub.broadcast("telemetry", event)
-                        outcomes = self.inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
+                        outcomes = await self.inference_runtime.add_async(packet.well_id, packet.timestamp, event["measurements"])
                         inferences, alarm = await persist_inferences(
                             session, row, outcomes, self.settings.inference_anomaly_threshold,
                             self.settings.inference_confirmation_windows, self.settings.inference_recovery_windows,

@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from uuid import uuid4
 
+from pydantic import AwareDatetime
 from fastapi import Depends, FastAPI, HTTPException, WebSocket
 from sqlalchemy import desc, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_settings
-from .database import Base, engine, get_session
+from .database import Base, engine, get_session, migrate_schema
 from .inference import InferenceRuntime
 from .diagnostics import ControlledDiagnosticService
 from .models import Alarm, DiagnosticRecord, EdgeDevice, InferenceResult, Telemetry, Well
@@ -25,16 +27,7 @@ diagnostic_service = ControlledDiagnosticService(settings)
 async def lifespan(_: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # The phase-2 table allowed only one result per telemetry point. Upgrade existing
-        # PostgreSQL deployments before persisting active and shadow results together.
-        if conn.dialect.name == "postgresql":
-            await conn.execute(text("ALTER TABLE inference_results DROP CONSTRAINT IF EXISTS uq_inference_telemetry"))
-            await conn.execute(text("ALTER TABLE inference_results ADD COLUMN IF NOT EXISTS model_type VARCHAR(32) NOT NULL DEFAULT 'xgboost'"))
-            await conn.execute(text("ALTER TABLE inference_results ADD COLUMN IF NOT EXISTS model_mode VARCHAR(16) NOT NULL DEFAULT 'active'"))
-            await conn.execute(text("ALTER TABLE inference_results DROP CONSTRAINT IF EXISTS uq_inference_telemetry_model_mode"))
-            await conn.execute(text("ALTER TABLE inference_results ADD CONSTRAINT uq_inference_telemetry_model_mode UNIQUE (telemetry_id, model_mode)"))
-            await conn.execute(text("ALTER TABLE diagnostic_records ADD COLUMN IF NOT EXISTS evidence_status VARCHAR(16) NOT NULL DEFAULT 'complete'"))
-            await conn.execute(text("ALTER TABLE diagnostic_records ADD COLUMN IF NOT EXISTS degradation_reasons JSONB NOT NULL DEFAULT '[]'::jsonb"))
+        await migrate_schema(conn)
     inference_runtime.load()
     await bridge.start()
     yield
@@ -46,7 +39,7 @@ app = FastAPI(title="OilWell AI API", version="0.1.0", lifespan=lifespan)
 
 
 def alarm_view(row: Alarm) -> dict:
-    return {"id": row.id, "well_id": row.well_id, "telemetry_id": row.telemetry_id, "severity": row.severity, "event_type": row.event_type, "status": row.status, "message": row.message, "raised_at": row.raised_at, "acknowledged_at": row.acknowledged_at}
+    return {"id": row.id, "well_id": row.well_id, "telemetry_id": row.telemetry_id, "severity": row.severity, "event_type": row.event_type, "status": row.status, "message": row.message, "raised_at": row.raised_at, "acknowledged_at": row.acknowledged_at, "resolved_at": row.resolved_at}
 
 
 def diagnostic_view(row: DiagnosticRecord) -> dict:
@@ -80,7 +73,7 @@ async def ingest_telemetry(packet: TelemetryIn, session: AsyncSession = Depends(
     event = packet.model_dump(mode="json", by_alias=True)
     hub.add_telemetry(event)
     await hub.broadcast("telemetry", event)
-    outcomes = inference_runtime.add(packet.well_id, packet.timestamp, event["measurements"])
+    outcomes = await inference_runtime.add_async(packet.well_id, packet.timestamp, event["measurements"])
     inferences, alarm = await persist_inferences(
         session, row, outcomes, settings.inference_anomaly_threshold,
         settings.inference_confirmation_windows, settings.inference_recovery_windows,
@@ -106,7 +99,7 @@ async def ingest_status(status: DeviceStatusIn, session: AsyncSession = Depends(
 @app.get("/api/dashboard")
 async def dashboard(session: AsyncSession = Depends(get_session)) -> dict:
     wells = (await session.scalar(select(func.count()).select_from(Well))) or 0
-    devices = (await session.scalar(select(func.count()).select_from(EdgeDevice).where(EdgeDevice.status != "OFFLINE"))) or 0
+    devices = (await session.scalar(select(func.count()).select_from(EdgeDevice).where(EdgeDevice.status != "OFFLINE", EdgeDevice.last_heartbeat >= datetime.now(timezone.utc) - timedelta(seconds=30)))) or 0
     alarms = (await session.scalar(select(func.count()).select_from(Alarm).where(Alarm.status == "UNACKNOWLEDGED"))) or 0
     return {"wells": wells, "online_devices": devices, "active_alarms": alarms}
 
@@ -118,18 +111,31 @@ async def wells(session: AsyncSession = Depends(get_session)) -> list[dict]:
 
 
 @app.get("/api/wells/{well_id}/telemetry")
-async def telemetry_history(well_id: str, limit: int = 360, session: AsyncSession = Depends(get_session)) -> list[dict]:
+async def telemetry_history(well_id: str, limit: int = 360, start: AwareDatetime | None = None, end: AwareDatetime | None = None, session: AsyncSession = Depends(get_session)) -> list[dict]:
     if not 1 <= limit <= 5000:
         raise HTTPException(422, "limit must be between 1 and 5000")
-    rows = (await session.scalars(select(Telemetry).where(Telemetry.well_id == well_id).order_by(desc(Telemetry.timestamp)).limit(limit))).all()
+    if start and end and start > end:
+        raise HTTPException(422, "start must not be after end")
+    statement = select(Telemetry).where(Telemetry.well_id == well_id)
+    if start: statement = statement.where(Telemetry.timestamp >= start)
+    if end: statement = statement.where(Telemetry.timestamp <= end)
+    rows = (await session.scalars(statement.order_by(desc(Telemetry.timestamp), desc(Telemetry.id)).limit(limit))).all()
     return [{"timestamp": item.timestamp, "sequence": item.sequence, "measurements": {"P_PDG": item.p_pdg, "P_TPT": item.p_tpt, "T_TPT": item.t_tpt, "P_MON_CKP": item.p_mon_ckp, "T_JUS_CKP": item.t_jus_ckp, "P_JUS_CKGL": item.p_jus_ckgl, "QGL": item.qgl}, "event_hint": item.event_hint} for item in reversed(rows)]
 
 
 @app.get("/api/wells/{well_id}/inference")
-async def inference_history(well_id: str, mode: str | None = None, limit: int = 360, session: AsyncSession = Depends(get_session)) -> list[dict]:
+async def inference_history(well_id: str, mode: str | None = None, limit: int = 360, start: AwareDatetime | None = None, end: AwareDatetime | None = None, event_class: str | None = None, session: AsyncSession = Depends(get_session)) -> list[dict]:
     if not 1 <= limit <= 5000:
         raise HTTPException(422, "limit must be between 1 and 5000")
+    if start and end and start > end:
+        raise HTTPException(422, "start must not be after end")
     statement = select(InferenceResult).where(InferenceResult.well_id == well_id)
+    if start: statement = statement.where(InferenceResult.window_end >= start)
+    if end: statement = statement.where(InferenceResult.window_end <= end)
+    if event_class:
+        if event_class not in {"Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line"}:
+            raise HTTPException(422, "unsupported event class")
+        statement = statement.where(InferenceResult.predicted_class == event_class)
     if mode:
         if mode not in {"active", "shadow"}:
             raise HTTPException(422, "mode must be active or shadow")
@@ -222,7 +228,7 @@ async def acknowledge(alarm_id: int, session: AsyncSession = Depends(get_session
 @app.get("/api/edge-devices")
 async def edge_devices(session: AsyncSession = Depends(get_session)) -> list[dict]:
     rows = (await session.scalars(select(EdgeDevice).order_by(EdgeDevice.id))).all()
-    return [{"id": item.id, "status": item.status, "last_heartbeat": item.last_heartbeat, "metrics": item.metadata_} for item in rows]
+    return [{"id": item.id, "status": ("OFFLINE" if item.last_heartbeat is None or (datetime.now(timezone.utc) - item.last_heartbeat.replace(tzinfo=timezone.utc)).total_seconds() > 30 else item.status), "last_heartbeat": item.last_heartbeat, "metrics": item.metadata_} for item in rows]
 
 
 @app.post("/api/replay/{device_id}/commands", status_code=202)
@@ -231,7 +237,7 @@ async def replay_command(device_id: str, command: ReplayCommand) -> dict:
         raise HTTPException(422, "speed is required for SET_SPEED")
     if command.command == "LOAD_INSTANCE" and not command.instance:
         raise HTTPException(422, "instance is required for LOAD_INSTANCE")
-    body = command.model_dump(exclude_none=True)
+    body = {**command.model_dump(exclude_none=True), "command_id": str(uuid4())}
     try:
         await bridge.publish_command(device_id, body)
     except RuntimeError as exc:
