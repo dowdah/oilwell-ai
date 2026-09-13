@@ -22,6 +22,25 @@ All evidence paths below are protected, non-Git paths under
 `$MAINT_EVIDENCE_DIR`; no passwords, private keys, tokens, or full connection
 strings may be copied into the change record.
 
+### Unified fail-closed graceful stop
+
+For API, Web, and Edge, first record the exact container ID, image ID, PID and
+`.Config.StopSignal`. Empty StopSignal means `SIGTERM`; `SIGKILL`, `KILL`, or
+`9` is No-Go. Use the fixed ID only: send `docker kill --signal
+"$STOP_SIGNAL" "$CONTAINER_ID"`, then inspect once per second for at most 20
+seconds. Success requires `running=false` and `status=exited`. Signal failure
+or timeout is Abort: do not send a second signal, SIGKILL, `docker stop`,
+restart, remove, or Compose command. This procedure replaces every stop below.
+
+```bash
+STOP_SIGNAL="$(docker inspect --format '{{.Config.StopSignal}}' "$CONTAINER_ID")"
+STOP_SIGNAL="${STOP_SIGNAL:-SIGTERM}"
+case "$STOP_SIGNAL" in SIGKILL|KILL|9) exit 1;; esac
+docker kill --signal "$STOP_SIGNAL" "$CONTAINER_ID"
+for elapsed in $(seq 1 20); do sleep 1; state="$(docker inspect --format '{{.State.Status}}|{{.State.Running}}' "$CONTAINER_ID")"; [ "$state" = 'exited|false' ] && break; done
+[ "${state:-}" = 'exited|false' ] || exit 1
+```
+
 ## 1. Fixed source and image identity chain
 
 API runtime source is `6eb90bbc3d2cb850194d223f66805e0e3c19feec`; Web is the
@@ -95,6 +114,14 @@ them from memory. Also record host available memory, each container's memory
 and CPU, total container use, and restart counts. OOM, swap/thrashing, repeated
 restart, or resource exhaustion is No-Go.
 
+Create C1 env files only from the maintenance-window-approved old container:
+`docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}'
+"$OLD_CONTAINER_ID" > "$API_ENV_FILE"` (and likewise Edge), with `umask 077`
+and mode `0600`. Do not print values. Record only sorted variable names and the
+env-file SHA-256 publicly. Reject unknown names; inject only documented C1
+state variables separately. Inability to safely extract the approved env is
+No-Go.
+
 ## 3. API deployment and catalog gate
 
 ### Preconditions
@@ -121,7 +148,7 @@ set -o errexit -o nounset -o pipefail
 docker run -d --name infra-api-c1 \
   --label com.docker.compose.project=infra \
   --label com.docker.compose.service=api \
-  --restart unless-stopped --memory 512m --network "$API_NETWORK" \
+  --restart=no --memory 512m --network "$API_NETWORK" \
   -p "127.0.0.1:${API_PORT}:8000" --env-file "$API_ENV_FILE" \
   -v "$API_MODEL_CURRENT_SOURCE:/models/current:ro" \
   -v "$API_MODEL_SHADOW_SOURCE:/models/shadow:ro" \
@@ -140,12 +167,9 @@ max sequence, and active telemetry writers to remain unchanged/zero. Then call
 `/api/health` and require database, MQTT, active XGBoost, and shadow TCN ready;
 also record memory and restart count.
 
-Any failed catalog, health, model, resource, or no-write check is Abort:
-
-```bash
-docker stop --time 20 infra-api-c1
-docker inspect --format '{{.State.Status}}|{{.State.FinishedAt}}' infra-api-c1
-```
+After every gate passes, enable the approved steady-state policy with `docker
+update --restart unless-stopped infra-api-c1`. On failure use the unified
+graceful-stop procedure.
 
 Do not start `infra-api-1`; database remains migrated and writers remain
 stopped.
@@ -157,9 +181,9 @@ its approved image ID. Stop old Web; retain its exited container for rollback.
 Start C1 Web on the captured network and port, with the C1 image ID:
 
 ```bash
-docker stop --time 20 infra-web-1
+# Execute the Unified fail-closed graceful stop procedure above for infra-web-1.
 docker run -d --name infra-web-c1 --label com.docker.compose.project=infra \
-  --label com.docker.compose.service=web --restart unless-stopped --memory 128m \
+  --label com.docker.compose.service=web --restart=no --memory 128m \
   --network "$WEB_NETWORK" -p "127.0.0.1:${WEB_PORT}:80" "$WEB_SOURCE_IMAGE_ID"
 ```
 
@@ -167,11 +191,12 @@ Require one running `infra/web` label selection, then browse only historical
 data: dashboard, wells, history, and alarms. Require proxy success and no
 blocking browser error. No telemetry test is allowed.
 
-Web-only rollback is concrete:
+After Web gates pass run `docker update --restart unless-stopped infra-web-c1`.
+Web-only rollback uses the unified graceful-stop procedure for C1, then starts
+only the retained approved old Web container:
 
 ```bash
-docker stop --time 20 infra-web-c1
-docker inspect --format '{{.State.Status}}' infra-web-c1
+# Execute the Unified fail-closed graceful stop procedure above for infra-web-c1.
 docker start infra-web-1
 docker inspect --format '{{.State.Status}}|{{.Image}}' infra-web-1
 ```
@@ -202,16 +227,21 @@ FROM public.telemetry AS t
 WHERE t.device_id = 'edge-pi-01';
 ```
 
-Use the C1 Edge image as a helper with the named volume. This exact initializer
+Use the C1 Edge image as a helper with the named volume. It first imports the
+actual production `SingleWriterLock` for the same device and obtains flock.
+Lock contention is No-Go with no state update. This exact initializer
 rejects malformed state, writes a temporary file, fsyncs it, atomically renames,
 fsyncs the parent directory, and re-reads the result. It does not send MQTT.
 
 ```bash
 docker run --rm -i --mount "type=volume,src=${EDGE_STATE_VOLUME},dst=/state" \
-  --entrypoint python "$EDGE_SOURCE_IMAGE_ID" - "$M" <<'PY'
+  --entrypoint python "$EDGE_SOURCE_IMAGE_ID" - "$M" "$EDGE_DEVICE_ID" <<'PY'
 import json, os, sys
 from pathlib import Path
-m = int(sys.argv[1]); path = Path('/state/sequence.json'); u = 0
+from edge_agent.single_writer import SingleWriterLock
+m = int(sys.argv[1]); device_id = sys.argv[2]; path = Path('/state/sequence.json'); u = 0
+lock = SingleWriterLock(path.parent, device_id)
+lock.acquire()
 if path.exists():
     old = json.loads(path.read_text())
     if old.get('schema') != 1 or not isinstance(old.get('reserved_until'), int):
@@ -247,7 +277,7 @@ docker run -d --name edge-agent-c1 \
   --label com.docker.compose.project=edge \
   --label com.docker.compose.service=edge-agent \
   --label oilwell.device_id=edge-pi-01 \
-  --restart unless-stopped --network "$EDGE_NETWORK" --env-file "$EDGE_ENV_FILE" \
+  --restart=no --network "$EDGE_NETWORK" --env-file "$EDGE_ENV_FILE" \
   -e EDGE_SEQUENCE_FILE=/state/sequence.json -e EDGE_REPLAY_AUTOSTART=false \
   --mount "type=volume,src=${EDGE_STATE_VOLUME},dst=/state" \
   --mount "type=bind,src=${EDGE_DATA_SOURCE},dst=/data,readonly" \
@@ -274,11 +304,14 @@ replay STOPPED/not replaying, readable state, and unchanged telemetry count.
 Read state after allocator startup: `new_reserved_until > M` and below the
 safe-integer limit. Do not send START or any telemetry.
 
+After all Edge gates pass run `docker update --restart unless-stopped
+edge-agent-c1`. On failure use the unified graceful-stop procedure; retain the
+canonical volume and lock file.
+
 Edge failure rollback:
 
 ```bash
-docker stop --time 20 edge-agent-c1
-docker inspect --format '{{.State.Status}}|{{.State.FinishedAt}}' edge-agent-c1
+# Execute the Unified fail-closed graceful stop procedure above for edge-agent-c1.
 docker volume inspect "$EDGE_STATE_VOLUME"
 ```
 
