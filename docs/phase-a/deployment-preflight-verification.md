@@ -5,9 +5,9 @@
 | Gate | Result |
 | --- | --- |
 | ECS Docker runtime capture | PASS in isolated Docker validation |
-| Production Pi target registration | BLOCKED — registration required |
-| Production Pi identity verification | Not attempted; no registered target |
-| Deployment Runbook update | Deferred until both preceding gates pass |
+| Production Pi target registration | PASS — protected LAN-only record created |
+| Production Pi identity verification | PASS — exact LAN SSH identity matched the record |
+| Deployment Runbook update | Eligible; recorded separately with the validated template and target gate |
 
 No production API, Web, Edge, state volume, sequence state, replay, telemetry,
 or database operation was performed in this phase.
@@ -74,15 +74,17 @@ correction and was not altered in this phase.
 
 ## Production Pi target registration status
 
-The required Git-ignored target-record location is available at
-`docs/.local/targets/production-edge.json`. Existing protected local material
-did not contain a uniquely correlated Pi endpoint, expected machine-id hash,
-hostname, architecture, Docker/old-Edge identity, and `edge-pi-01` device
-identity. A generic SSH hint without those correlations is not a valid target
-record and was not used.
+The required Git-ignored target record was created at
+`docs/.local/targets/production-edge.json` after a direct read-only check of
+the user-provided LAN entry. It is mode `0600`, Git ignored, and contains the
+approved LAN endpoint, host-key fingerprint, exact machine identity, expected
+Docker/old-Edge identity, and `edge-pi-01` device ID. It deliberately records
+no verified Pi WireGuard endpoint because the Pi has no WireGuard interface.
+The endpoint itself and other non-public target material are not copied into
+this document.
 
-Before any Pi operation, an operator must create the protected record with at
-least:
+Before any future Pi operation, an operator must use the protected record and
+revalidate at least:
 
 - logical name `production-edge-pi-01`;
 - approved endpoint and permitted SSH user;
@@ -99,10 +101,11 @@ container-count, or device-ID mismatch. It must not try a fallback host.
 
 ## Conclusion
 
-`C1 production preflight tooling: NOT READY`.
+`C1 production preflight tooling: READY`.
 
-ECS capture has a validated correction, but the required production Pi target
-is not uniquely registered or identity-verified. Do not update the deployment
-Runbook or resume production deployment until that registration and its
-read-only identity verification both pass. A subsequent deployment attempt
-requires a new maintenance ID and new production evidence.
+ECS capture has a validated correction and the production Pi target is uniquely
+registered and identity-verified. This does not authorize deployment: the
+read-only Pi capture observed the old Edge container running, so a future
+deployment window must obtain fresh writer/replay evidence and satisfy the
+Runbook's stopped-writer gate before any C1 action. It also requires a new
+maintenance ID and new production evidence.
