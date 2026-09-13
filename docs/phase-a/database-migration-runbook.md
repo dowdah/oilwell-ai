@@ -68,10 +68,26 @@ export MAINTENANCE_ID='<change-ticket-or-window-id>'
 - [ ] `uq_inference_telemetry_model_mode` 是 `public.inference_results(telemetry_id, model_mode)` 的 UNIQUE 约束，且记录其 constraint OID 与 backing-index OID。
 - [ ] 已记录每个 `device_id` 的 telemetry `count/min(sequence)/max(sequence)`，以及 telemetry、alarms、inference_results 行数。
 - [ ] 已确认 API、PostgreSQL、MQTT、Edge 的实际运行状态和镜像/版本；历史审计值不能代替本次观察。
-- [ ] Pi replay 已停止，且没有相同 `device_id` 的其他 MQTT、HTTP、脚本或人工写入者。
+- [ ] 已批准并可执行本 Runbook 的 Stop Writes 流程；Pi replay 和所有其他 telemetry publisher 将在该步骤中停止并逐项确认。
 - [ ] PostgreSQL 宿主磁盘空间、容器/宿主 CPU 与内存、连接数、ECS 资源状态均可接受；无磁盘逼近、OOM、重启、复制或存储告警。
-- [ ] 已完成本次维护窗口的新备份及其可读性验证。
 - [ ] 已批准停写策略，且明确谁负责确认 MQTT 积压、保留消息和所有替代写入路径。
+
+### 固定执行顺序
+
+维护窗口按以下顺序推进，前一阶段未获得 Go 不得进入后一阶段：
+
+```text
+Preflight A
+→ Stop Writes
+→ Drain / Stable Verification
+→ Fresh Production Backup
+→ Final Schema/Data Assertion
+→ Approved DDL
+→ Post-Migration Validation
+→ Database ready for C1 deployment
+```
+
+因此，当次生产备份不是 Preflight A 的循环前置条件：先完成 Preflight A，再停写、排空并证明稳定，之后才生成新备份。
 
 ### 经审核可执行只读命令：基础实例与资源核验
 
@@ -112,7 +128,11 @@ WITH target(name, relation_name) AS (
 SELECT c.conname,
        c.oid AS constraint_oid,
        c.conindid AS backing_index_oid,
+       backing_index.relfilenode AS backing_index_relfilenode,
        c.contype AS constraint_type,
+       c.convalidated AS constraint_validated,
+       backing_index_index.indisvalid AS backing_index_valid,
+       backing_index_index.indisready AS backing_index_ready,
        n.nspname AS table_schema,
        r.relname AS table_name,
        array_agg(a.attname ORDER BY k.ordinality) AS columns,
@@ -121,9 +141,13 @@ FROM target t
 JOIN pg_class r ON r.oid = to_regclass(format('%I.%I', 'public', t.relation_name))
 JOIN pg_constraint c ON c.conrelid = r.oid AND c.conname = t.name
 JOIN pg_namespace n ON n.oid = r.relnamespace
+JOIN pg_class backing_index ON backing_index.oid = c.conindid
+JOIN pg_index backing_index_index ON backing_index_index.indexrelid = c.conindid
 JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS k(attnum, ordinality) ON TRUE
 JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
-GROUP BY c.conname, c.oid, c.conindid, c.contype, n.nspname, r.relname
+GROUP BY c.conname, c.oid, c.conindid, backing_index.relfilenode,
+         c.contype, c.convalidated, backing_index_index.indisvalid,
+         backing_index_index.indisready, n.nspname, r.relname
 ORDER BY c.conname;
 
 SELECT device_id,
@@ -138,6 +162,38 @@ SELECT 'telemetry' AS table_name, count(*) AS row_count FROM public.telemetry
 UNION ALL SELECT 'alarms', count(*) FROM public.alarms
 UNION ALL SELECT 'inference_results', count(*) FROM public.inference_results
 ORDER BY table_name;
+
+-- Full pre-migration identity baseline. Compare these result sets with the
+-- identically shaped post-migration catalog snapshots in section 8.
+SELECT c.conrelid::regclass AS table_name,
+       c.conname,
+       c.oid AS constraint_oid,
+       c.conindid AS backing_index_oid,
+       backing_index.relfilenode AS backing_index_relfilenode,
+       c.contype,
+       c.convalidated AS constraint_validated,
+       backing_index_index.indisvalid AS backing_index_valid,
+       backing_index_index.indisready AS backing_index_ready,
+       pg_get_constraintdef(c.oid) AS definition
+FROM pg_constraint c
+JOIN pg_namespace n ON n.oid = c.connamespace
+LEFT JOIN pg_class backing_index ON backing_index.oid = c.conindid
+LEFT JOIN pg_index backing_index_index ON backing_index_index.indexrelid = c.conindid
+WHERE n.nspname = 'public'
+ORDER BY c.conrelid::regclass::text, c.conname;
+
+SELECT t.relname AS table_name,
+       i.indexrelid AS index_oid,
+       idx.relfilenode AS index_relfilenode,
+       i.indisvalid AS index_valid,
+       i.indisready AS index_ready,
+       pg_get_indexdef(i.indexrelid) AS definition
+FROM pg_index i
+JOIN pg_class t ON t.oid = i.indrelid
+JOIN pg_class idx ON idx.oid = i.indexrelid
+JOIN pg_namespace n ON n.oid = idx.relnamespace
+WHERE n.nspname = 'public'
+ORDER BY t.relname, idx.relname;
 SQL
 ```
 
@@ -147,8 +203,8 @@ Expected schema rows are exactly:
 |---|---|
 | `telemetry.sequence` | `int4`, not null |
 | `alarms.resolved_at` | no row (column absent) |
-| `uq_telemetry_device_sequence` | `contype = u`, table `public.telemetry`, ordered columns `{device_id,sequence}` |
-| `uq_inference_telemetry_model_mode` | `contype = u`, table `public.inference_results`, ordered columns `{telemetry_id,model_mode}` |
+| `uq_telemetry_device_sequence` | `contype = u`、validated、table `public.telemetry`、ordered columns `{device_id,sequence}`；backing index valid/ready |
+| `uq_inference_telemetry_model_mode` | `contype = u`、validated、table `public.inference_results`、ordered columns `{telemetry_id,model_mode}`；backing index valid/ready |
 
 If either constraint is absent, has another type/table/ordered column list, or the expected column state differs, it is **No-Go**. Do not attempt to repair production schema under this Runbook.
 
@@ -162,19 +218,29 @@ Edge → MQTT → API subscriber → PostgreSQL
 
 HTTP ingestion、手工脚本、备用 Edge 或同一 `device_id` 的任何其他 publisher 同样可能绕过这条主路径，必须逐一确认。
 
-### 停写顺序和可验证条件
+### 固定停写流程与可验证条件
 
-1. **先停止产生者，而不是先停止数据库。** 使用已批准的 Edge 控制路径停止 Pi replay；若该路径不能给出可靠停止确认，则由负责人员通过受控方式停止 Edge replay 进程，并阻止其自动重启。不要初始化 `/state`、不要改变 sequence、不要部署 C1 Edge。
-2. **保持 MQTT 与当前 API 暂时运行以排空并观察。** 不停止 PostgreSQL；不将“服务仍运行”视为无写入证据。记录停止请求、Edge 状态/回执、最后一条接受的 telemetry 以及观察开始时间。
-3. **证明写入已经静止。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复记录 telemetry 总数、每 device 的 max sequence 和 API/数据库日志；这些值必须稳定。确认 broker 没有对该客户端会话待投递的 QoS 消息、没有 telemetry retained message，且没有重连/自动重放计划。
-4. **封闭所有替代写入者。** 明确列出并停止同一数据库的 HTTP 发送器、脚本、备用 Edge 与其他同 `device_id` publisher。若任何写入者无法确认，No-Go。
-5. **最后停止或隔离 API 的 MQTT subscriber，但不重启旧 API。** 目的只是防止维护期间继续消费；不要用“restart API”实现此步骤。确认数据库中没有活跃 telemetry 写入事务，且计数/每-device max sequence 再次稳定。
+严格按以下顺序执行：
+
+1. **Pi replay STOP。** 使用已批准的 Edge 控制路径停止 Pi replay，并取得实际停止状态/回执；若该路径不能给出可靠确认，由负责人员以受控方式停止 replay 进程并阻止自动重启。不要初始化 `/state`、不要改变 sequence、不要部署 C1 Edge。
+2. **停止并确认所有其他 telemetry publisher。** 明确列出并停止 HTTP 发送器、脚本、备用 Edge 与同一 `device_id` 的其他 MQTT publisher。任何一个写入者不能确认即 No-Go。
+3. **保持旧 API 与 MQTT 短暂运行以排空。** 不停止 PostgreSQL，也不重启旧 API。记录停止请求、最后一条接受的 telemetry、观察开始时间和 API/broker 日志。
+4. **Drain / Stable Verification。** 在超过当前最大消息间隔、QoS 重试窗口和 API subscriber 处理延迟的连续观察窗口内，重复记录 telemetry 总数和每个 device 的 `max(sequence)`；所有值必须连续稳定。
+5. **确认 broker 无相关积压或 retained telemetry。** 必须由 broker 运营证据确认：相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压，且不存在会在后续连接时重放的会话消息。
+6. **只停止旧 API。** 在生产环境实际、已批准的 Compose 项目上下文中执行下列命令；它只停止 `api`，不得用 restart、recreate 或 `compose up` 替代。
+
+   ```bash
+   # 经审核可执行命令：只在前五步全部通过后运行。
+   docker compose stop api
+   ```
+
+7. **再次确认数据库没有 telemetry 写入。** 在 API 已停止后，再次运行第 3 节的 telemetry count / per-device max(sequence) 查询并观察一个完整验证窗口；数值必须保持稳定，且无活跃 telemetry 写入事务。通过后才进入当次生产备份。
 
 ### MQTT 积压和旧消息风险
 
 MQTT 可能因 QoS、持久会话、保留消息或客户端重连在稍后投递旧 telemetry。仅停止 Pi 进程不足以证明安全。必须由 broker 运营证据确认：对相关 telemetry topic 没有 retained message、目标 subscriber 没有未确认积压、没有会在后续重启时重放的会话消息。
 
-在本 Runbook 结束后，**不要**恢复旧 API、旧 Edge 或任何 telemetry publisher。数据库迁移完成后至 C1 受控部署前，写入保持关闭。这样既避免旧 API startup 的额外 DDL，也避免旧消息或旧 sequence 在未完成 C1 Edge state 初始化前进入数据库。
+`docker compose stop api` 后，旧 API 必须持续保持停止。不得 restart、recreate、`compose up` 或以任何方式触发旧 API lifespan。数据库迁移完成后至 C1 Controlled Deployment 前，既不恢复旧 API，也不恢复 Edge 或任何 telemetry publisher；这样既避免旧 API startup 的额外 DDL，也避免旧消息或旧 sequence 在未完成 C1 Edge state 初始化前进入数据库。
 
 如果无法证明上述任意一点，保持停写并判定 No-Go；不得以重启旧 API “查看健康状态”。
 
@@ -270,18 +336,22 @@ DDL 成功后，保持所有写入关闭。将迁移前和迁移后快照逐项�
 - telemetry、alarms、inference_results 行数；
 - 每个 device 的 telemetry count/min(sequence)/max(sequence)；
 - 全部原 sequence 值（按 `id/device_id/sequence` 的可复算快照）；
-- `uq_telemetry_device_sequence` 的定义、constraint OID 和 backing-index OID；
 - `uq_inference_telemetry_model_mode` 的定义、constraint OID 和 backing-index OID；
-- 其余既有约束、外键、关键索引的定义和 OID。
+- 所有与 `telemetry.sequence` 无依赖关系的既有约束、外键、关键索引的定义和 OID。
 
 ### 允许且必须出现的变化
 
 - `telemetry.sequence` 为 `int8`/`BIGINT`，原有 NOT NULL 保持；
 - `alarms.resolved_at` 为 `timestamptz`，nullable 为 `YES`；
 - 存量 alarms 的 `resolved_at` 均为 NULL；
-- 没有其他列、约束或索引变化。
+- `uq_telemetry_device_sequence` 仍是已验证的 UNIQUE 约束，所属表为 `public.telemetry`，有序列为 `(device_id, sequence)`，且 backing index 为 valid/ready；
+- 仅由 `telemetry.sequence` 类型变更导致、并已在审计记录中解释的合法物理重建。
 
 特别门禁：本次迁移**不得**修改 `uq_inference_telemetry_model_mode`。其 constraint OID 和 backing-index OID 必须与迁移前一致。
+
+本 Runbook 仅将 `uq_telemetry_device_sequence` 视为可能受 `telemetry.sequence` 类型变更影响的对象。必须记录它 migration 前后的 constraint OID、backing-index OID 和 backing-index `relfilenode`，但在没有演练证据证明这些身份必须不变时，不能仅因该对象的 OID 或 relfilenode 改变就判定失败。该对象的 UNIQUE 语义、表、列顺序、validated 状态和 index valid/ready 是硬门禁。
+
+相反，任何与 `telemetry.sequence` 无依赖关系的约束、索引或外键出现意外定义/OID 变化均为 Abort。`uq_inference_telemetry_model_mode` 不依赖本次批准 DDL，OID 或 backing-index OID 的任意变化均为 Abort。
 
 ### 经审核可执行只读 SQL：迁移后比较快照
 
@@ -313,15 +383,24 @@ SELECT c.conrelid::regclass AS table_name,
        c.conname,
        c.oid AS constraint_oid,
        c.conindid AS backing_index_oid,
+       backing_index.relfilenode AS backing_index_relfilenode,
        c.contype,
+       c.convalidated AS constraint_validated,
+       backing_index_index.indisvalid AS backing_index_valid,
+       backing_index_index.indisready AS backing_index_ready,
        pg_get_constraintdef(c.oid) AS definition
 FROM pg_constraint c
 JOIN pg_namespace n ON n.oid = c.connamespace
+LEFT JOIN pg_class backing_index ON backing_index.oid = c.conindid
+LEFT JOIN pg_index backing_index_index ON backing_index_index.indexrelid = c.conindid
 WHERE n.nspname = 'public'
 ORDER BY c.conrelid::regclass::text, c.conname;
 
 SELECT t.relname AS table_name,
        i.indexrelid AS index_oid,
+       idx.relfilenode AS index_relfilenode,
+       i.indisvalid AS index_valid,
+       i.indisready AS index_ready,
        pg_get_indexdef(i.indexrelid) AS definition
 FROM pg_index i
 JOIN pg_class t ON t.oid = i.indrelid
@@ -336,22 +415,17 @@ WHERE resolved_at IS NOT NULL;
 SQL
 ```
 
-Use a deterministic diff tool to compare the pre/post audit files and attach the result to the change record. The operator must manually verify that the only allowed schema differences are the two listed above. Any row-count, sequence-signature, constraint/index OID, index definition, foreign-key definition, nullability or unexpected schema difference is an Abort condition.
+Use a deterministic diff tool to compare the pre/post audit files and attach the result to the change record. The operator must apply the object-specific OID rules above: inference composite uniqueness has immutable identity; telemetry uniqueness has immutable semantics but recorded OID/relfilenode changes require review rather than automatic failure; all unrelated objects retain immutable definition/OID expectations. Any row-count, sequence-signature, uniqueness semantic, foreign-key definition, nullability, index validity/readiness or unexpected unrelated schema difference is an Abort condition.
 
-## 9. 应用兼容性检查（不部署 C1）
+## 9. 应用兼容性边界（不部署 C1）
 
 数据库迁移成功只证明 database readiness；它不授权 C1 deployment。
 
-在 C1 deployment 前，只做当前生产应用的最低必要兼容性检查：已运行实例的只读业务接口、数据库只读查询和受控日志检查。检查必须保持停写，且不得触发 application lifespan。
+旧 API startup 存在历史性的 `DROP CONSTRAINT` + `ADD CONSTRAINT` 风险，尤其针对 `uq_inference_telemetry_model_mode`。旧 API 的数据访问兼容性已由通过的隔离恢复库演练提供证据；本次生产迁移后**不调用旧 API 的 HTTP 接口**。
 
-旧 API startup 存在历史性的 `DROP CONSTRAINT` + `ADD CONSTRAINT` 风险，尤其针对 `uq_inference_telemetry_model_mode`。因此：
+迁移后只执行第 8 节的数据库级检查。旧 API 保持由 `docker compose stop api` 停止的状态，不得 restart、recreate、滚动更新或 `compose up`；这些操作会进入 lifespan 并可能执行额外 DDL。也不得恢复 Edge 或发送测试 telemetry。数据库迁移成功不等于 C1 已部署或 C1 Edge 已准备好。
 
-- 可以检查已运行 API 的只读 HTTP 路径（例如既有 health、wells、dashboard、telemetry history、alarms），前提是确认这些请求不重启进程、不调用 startup migration、不写 telemetry。
-- 可以执行本 Runbook 的 psql catalog/数据只读检查。
-- 不得为了“健康检查”重启、重建、滚动更新或 `compose up` 旧 API；这些操作会进入 lifespan 并可能执行额外 DDL。
-- 不得恢复 Edge 或发送测试 telemetry；数据库迁移成功不等于 C1 已部署或 C1 Edge 已准备好。
-
-若最低兼容性检查出现数据库错误、schema error、API 读取异常或任何意外 DDL 迹象，保持停写并按 Abort/rollback 条件处理。
+若数据库级检查出现错误、schema 异常或任何意外 DDL 迹象，保持停写并按 Abort/rollback 条件处理。
 
 ## 10. 回滚策略
 
@@ -385,7 +459,7 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 - 任一 device 的 sequence count/min/max 或 sequence-value signature 异常；
 - telemetry 或 inference 唯一约束异常，尤其是 inference 复合约束 OID/定义变化；
 - 关键索引、外键或其 OID/定义异常；
-- 应用最低兼容性检查失败，或发现旧 API startup compatibility 风险被触发；
+- 旧 API 被意外启动，或发现其 startup DDL 风险被触发；
 - PostgreSQL、宿主磁盘、CPU、内存、连接数或 ECS 资源异常。
 
 ## 12. 维护窗口收尾
@@ -393,7 +467,7 @@ Use a deterministic diff tool to compare the pre/post audit files and attach the
 在所有 post-migration validation 通过后：
 
 1. 将 Go/No-Go checklist、备份 SHA-256、pre/post 输出、OID/定义 diff、停写确认和执行时间写入受控变更记录；
-2. 保持 telemetry 写入关闭；
+2. 保持 telemetry 写入关闭，并保持旧 API 停止；
 3. 标记状态为 **Database ready for C1 deployment**；
 4. 等待后续 C1 Controlled Deployment Plan 的独立授权。
 
