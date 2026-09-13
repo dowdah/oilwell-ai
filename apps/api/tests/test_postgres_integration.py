@@ -9,6 +9,7 @@ import pytest_asyncio
 from sqlalchemy import select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.database import Base
 from app.inference import InferenceOutcome
@@ -22,12 +23,19 @@ async def session():
     url = os.getenv('OILWELL_TEST_DATABASE_URL')
     if not url: pytest.skip('requires isolated local PostgreSQL: OILWELL_TEST_DATABASE_URL')
     parsed = make_url(url)
-    if parsed.host not in {'127.0.0.1', 'localhost'} or parsed.database != 'oilwell_test':
-        pytest.fail('integration tests require localhost/oilwell_test, never a deployed database')
+    if parsed.host != '127.0.0.1' or parsed.database != 'oilwell_test':
+        pytest.fail('integration tests require 127.0.0.1/oilwell_test, never a deployed database')
+    if 'sslmode' in parsed.query:
+        pytest.fail('integration test URL must not contain sslmode; asyncpg SSL is set via connect_args')
     schema = 'test_' + uuid4().hex
-    admin = create_async_engine(url)
+    test_connect_args = {'ssl': False}
+    admin = create_async_engine(url, connect_args=test_connect_args, poolclass=NullPool)
     async with admin.begin() as conn: await conn.execute(text(f'CREATE SCHEMA {schema}'))
-    engine = create_async_engine(url, connect_args={'server_settings': {'search_path': schema}})
+    engine = create_async_engine(
+        url,
+        connect_args={**test_connect_args, 'server_settings': {'search_path': schema}},
+        poolclass=NullPool,
+    )
     try:
         async with engine.begin() as conn: await conn.run_sync(Base.metadata.create_all)
         async with async_sessionmaker(engine, expire_on_commit=False)() as value: yield value
