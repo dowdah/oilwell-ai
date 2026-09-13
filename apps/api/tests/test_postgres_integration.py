@@ -56,6 +56,32 @@ async def insert_result(session, sequence, outcomes):
     return await persist_inferences(session, row, outcomes, 0.5, 2, 3)
 
 
+async def inference_telemetry_model_mode_constraint(session):
+    result = await session.execute(text("""
+        SELECT
+            constraint_row.oid::bigint AS constraint_oid,
+            constraint_row.conindid::bigint AS backing_index_oid,
+            constraint_row.contype::text AS constraint_type,
+            table_row.relname AS table_name,
+            array_agg(attribute_row.attname ORDER BY key_column.ordinality) AS columns
+        FROM pg_constraint AS constraint_row
+        JOIN pg_class AS table_row ON table_row.oid = constraint_row.conrelid
+        JOIN LATERAL unnest(constraint_row.conkey) WITH ORDINALITY
+            AS key_column(attnum, ordinality) ON TRUE
+        JOIN pg_attribute AS attribute_row
+            ON attribute_row.attrelid = constraint_row.conrelid
+            AND attribute_row.attnum = key_column.attnum
+        WHERE constraint_row.conname = 'uq_inference_telemetry_model_mode'
+            AND constraint_row.conrelid = to_regclass(
+                format('%I.%I', current_schema(), 'inference_results')
+            )
+        GROUP BY constraint_row.oid, constraint_row.conindid,
+            constraint_row.contype, table_row.relname
+    """))
+    row = result.mappings().one_or_none()
+    return None if row is None else dict(row)
+
+
 async def test_bigint_dedup_and_replay_receipt_heartbeat(session):
     from app.models import EdgeDevice
     large = 1_789_214_000_000_000
@@ -143,6 +169,73 @@ async def test_existing_integer_sequence_schema_upgrades_idempotently(session):
     assert kind == 'bigint'
     await session.commit()
     assert await process_telemetry(session, packet(1_789_214_000_000_000)) is not None
+
+
+async def test_existing_inference_unique_constraint_is_preserved_across_startups(session):
+    from app.database import migrate_schema
+
+    before = await inference_telemetry_model_mode_constraint(session)
+    assert before is not None
+    assert before == {
+        'constraint_oid': before['constraint_oid'],
+        'backing_index_oid': before['backing_index_oid'],
+        'constraint_type': 'u',
+        'table_name': 'inference_results',
+        'columns': ['telemetry_id', 'model_mode'],
+    }
+    connection = await session.connection()
+    await migrate_schema(connection)
+    after_first_startup = await inference_telemetry_model_mode_constraint(session)
+    await migrate_schema(connection)
+    after_second_startup = await inference_telemetry_model_mode_constraint(session)
+
+    assert after_first_startup == before
+    assert after_second_startup == before
+
+
+async def test_missing_inference_unique_constraint_is_created_once(session):
+    from app.database import migrate_schema
+
+    await session.execute(text(
+        'ALTER TABLE inference_results '
+        'DROP CONSTRAINT uq_inference_telemetry_model_mode'
+    ))
+    await session.commit()
+    assert await inference_telemetry_model_mode_constraint(session) is None
+
+    connection = await session.connection()
+    await migrate_schema(connection)
+    after_first_startup = await inference_telemetry_model_mode_constraint(session)
+    assert after_first_startup['constraint_type'] == 'u'
+    assert after_first_startup['table_name'] == 'inference_results'
+    assert after_first_startup['columns'] == ['telemetry_id', 'model_mode']
+
+    await migrate_schema(connection)
+    after_second_startup = await inference_telemetry_model_mode_constraint(session)
+    assert after_second_startup == after_first_startup
+
+
+async def test_incompatible_inference_unique_constraint_fails_closed(session):
+    from app.database import migrate_schema
+
+    await session.execute(text(
+        'ALTER TABLE inference_results '
+        'DROP CONSTRAINT uq_inference_telemetry_model_mode'
+    ))
+    await session.execute(text(
+        'ALTER TABLE inference_results '
+        'ADD CONSTRAINT uq_inference_telemetry_model_mode '
+        'UNIQUE (telemetry_id, model_type)'
+    ))
+    await session.commit()
+    before = await inference_telemetry_model_mode_constraint(session)
+
+    connection = await session.connection()
+    with pytest.raises(RuntimeError, match='incompatible existing constraint'):
+        await migrate_schema(connection)
+    assert await inference_telemetry_model_mode_constraint(session) == before
+    await session.rollback()
+    assert await inference_telemetry_model_mode_constraint(session) == before
 
 
 async def test_history_filters_are_bounded_and_use_source_time(session, monkeypatch):
