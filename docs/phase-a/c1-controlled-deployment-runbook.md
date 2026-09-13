@@ -5,15 +5,18 @@
 This Runbook is prepared and non-production validated, but **is not deployment
 authority**. A future execution needs a new maintenance ID and explicit
 approval. Until then, production remains: database migrated; old API stopped;
-writers/Pi replay stopped; C1 absent; Edge `/state` uninitialized.
+the old Edge container is observed running; C1 absent; Edge `/state` remains
+uninitialized. Do not infer its replay or writer state from that observation.
 
 Stop after this fixed sequence; do not enter 240-point replay:
 
 ```text
-Artifact verification → API deployment → API catalog/no-write gate
-→ Web deployment → Web read-only gate → Edge state volume
-→ fresh DB MAX(sequence) → state initialization
-→ Edge deployment with replay stopped → Edge heartbeat/state/no-write gate
+Artifact verification → fresh ECS/Pi target identity
+→ old Edge replay-stopped verification → graceful retirement of old Edge
+→ broker/no-write verification → C1 API deployment → API catalog/no-write gate
+→ C1 Web deployment → Web read-only gate → canonical Edge state volume
+→ fresh DB MAX(sequence) → locked state initialization
+→ C1 Edge deployment with replay stopped → Edge heartbeat/state/no-write gate
 ```
 
 Never use Compose in this procedure: current production Compose interpolation
@@ -132,7 +135,58 @@ env-file SHA-256 publicly. Reject unknown names; inject only documented C1
 state variables separately. Inability to safely extract the approved env is
 No-Go.
 
-## 3. API deployment and catalog gate
+## 3. Old Edge retirement gate
+
+This gate is mandatory **before C1 API startup**.
+
+### Fresh Pi target identity
+
+For every deployment maintenance window, connect only to the protected target
+record's `production-edge-pi-01` endpoint, currently
+`dowdah@192.168.50.200`. Revalidate the recorded host-key fingerprint,
+hostname, machine-id SHA-256, `aarch64`/`arm64` architecture, Docker
+availability, exactly one old Edge candidate, and
+`EDGE_DEVICE_ID=edge-pi-01`. Any mismatch, missing target record, zero/multiple
+candidates, or device-ID mismatch is No-Go. Do not try another endpoint.
+
+The Pi has no direct WireGuard IP. ECS `wg0` and router `wgc5` are transit
+only, never a Pi SSH endpoint. A future jump transport to the same registered
+LAN endpoint must revalidate the same host key, machine-id, hostname,
+architecture, and device ID; a transport change cannot change target identity.
+Any new direct Pi endpoint requires separate user approval and registration.
+
+### Capture and prove no-write state
+
+Using the fixed old-Edge container ID, capture and record its container/image
+IDs, PID, optional StopSignal, project/service labels, device ID, state,
+restart policy, mounts, and network with the sanitized capture template above.
+Read and record the current replay state and selected instance through the
+approved existing Edge status/control path; do not infer either from a
+container name or image tag. Confirm it is the previously audited old Edge.
+
+Before stopping it, prove replay is not running and take repeated approved
+database/broker observations showing telemetry count and each-device maximum
+sequence stable. If replay is running, use the already approved Edge `STOP`
+control path and wait for its confirmation. If STOP cannot be confirmed, broker
+drain cannot be proven, or the stable observations change, this is No-Go.
+
+### Fail-closed retirement
+
+Fix and record the old Edge container ID, image ID, PID, and StopSignal, then
+execute the unified fail-closed graceful-stop procedure in Section 0. Empty
+StopSignal means `SIGTERM`; `SIGKILL` is No-Go. Only an explicit normal signal
+to that fixed ID is permitted. Poll once per second for at most 20 seconds;
+only `running=false` and `status=exited` succeeds. A signal failure or timeout
+is Abort. Do not send SIGKILL or a second signal, and do not use `docker stop`,
+restart, remove, or Compose.
+
+After success, retain the exited old container and its historical data mount
+for audit. Do not start it, restore its heartbeat, restart replay, delete data,
+or remove other historical assets. Recheck runtime writer count equals zero,
+the broker has no retained/backlogged telemetry from this Edge, and telemetry
+count/max(sequence) remains stable. Only then may C1 API deployment begin.
+
+## 4. API deployment and catalog gate
 
 ### Preconditions
 
@@ -184,7 +238,7 @@ graceful-stop procedure.
 Do not start `infra-api-1`; database remains migrated and writers remain
 stopped.
 
-## 4. Web deployment, read-only check, and rollback
+## 5. Web deployment, read-only check, and rollback
 
 Only after the API gate passes, record the stopped/running old Web identity and
 its approved image ID. Stop old Web; retain its exited container for rollback.
@@ -213,7 +267,7 @@ docker inspect --format '{{.State.Status}}|{{.Image}}' infra-web-1
 
 This rollback does not alter API, database, or Edge.
 
-## 5. Edge named volume and atomic state initialization
+## 6. Edge named volume and atomic state initialization
 
 The Compose logical volume is `edge-state`; resolve its actual runtime name on
 the Pi into `$EDGE_STATE_VOLUME` and record `docker volume inspect`. It must be
@@ -274,7 +328,7 @@ PY
 Record `M`, existing `U` (zero if absent), and the written value. Require it
 to be at least `M` and below `9007199254740991`.
 
-## 6. Edge deployment and no-write gate
+## 7. Edge deployment and no-write gate
 
 Start only after API/Web gates and state initialization. Use the Pi-captured
 network, environment file, MQTT parameters, and `/data` bind source; do not
@@ -329,7 +383,7 @@ Never remove the canonical volume, lock file, or state to "unlock"; never lower
 `reserved_until`, switch to a second state volume, or start old Edge replay.
 Kernel flock releases on process exit; lock-file presence is not ownership.
 
-## 7. Non-production validation record and resolved ownership gate
+## 8. Non-production validation record and resolved ownership gate
 
 The following operations were exercised with isolated Docker names/network and
 no production mount, credential, host, or telemetry:
@@ -354,10 +408,13 @@ the same flock and advanced `reserved_until` from `1789289816242248` to
 `1789289862298957`. These are isolation evidence only, never production
 initialization values. Separate device IDs held separate locks concurrently.
 
-## 8. Final Go/No-Go checklist
+## 9. Final Go/No-Go checklist
 
 - [ ] New maintenance ID; fresh runtime/catalog/resource evidence.
 - [ ] Archive SHA-256, destination image ID, and architecture chain verified.
+- [ ] Pi target identity was freshly verified only through the protected target record.
+- [ ] Old Edge replay was proven stopped, then old Edge exited through the graceful retirement gate.
+- [ ] Runtime writer count is zero and broker/database no-write observations are stable before C1 API.
 - [ ] Old API stopped; writers and replay stopped; C1 API only one running.
 - [ ] Exact model hashes/read-only mounts verified.
 - [ ] API startup catalog/OID/no-write/health/resource gates pass.
