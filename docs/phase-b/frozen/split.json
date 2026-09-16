@@ -1,0 +1,21 @@
+{
+  "seed": 20260917,
+  "groups": {
+    "train": [
+      "WELL-00001",
+      "WELL-00006",
+      "WELL-00015",
+      "WELL-00016",
+      "WELL-00037",
+      "WELL-00038"
+    ],
+    "validation": [
+      "WELL-00007",
+      "WELL-00020"
+    ],
+    "test": [
+      "WELL-00014"
+    ]
+  },
+  "method": "exhaustive metadata-only well assignment; binary coverage required in every group"
+}
