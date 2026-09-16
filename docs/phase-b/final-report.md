@@ -2,6 +2,12 @@
 
 ## 结论：rejected
 
+- Candidate status: `rejected`
+- Deployment status: `never deployed`
+- Test set: Phase B 当前可读数据协议下仅用于最终 held-out 评估一次。
+- Historical C2 result: `not reproduced under the current local dataset copy`。
+- 模型失败不阻塞课程系统交付；它只限制该候选作为跨井异常检测器或生产模型使用。
+
 本轮没有得到可用的跨井 Normal / Abnormal XGBoost 候选。候选与阈值仅使用训练井和验证井固定，最终对 held-out `WELL-00014` 的一次评估显示异常检测明显退化，因此停止模型优化；不训练候选 2/3，不重用测试集选择模型或阈值，也不接入任何生产组件。
 
 ## 冻结协议

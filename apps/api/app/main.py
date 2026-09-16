@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
+from statistics import fmean
 from uuid import uuid4
 
 from pydantic import AwareDatetime
@@ -52,6 +53,25 @@ def diagnostic_view(row: DiagnosticRecord) -> dict:
         "evidence_status": row.evidence_status, "degradation_reasons": row.degradation_reasons,
         "created_at": row.created_at,
     }
+
+
+async def diagnostic_evidence(session: AsyncSession, inference: InferenceResult) -> tuple[dict, list[dict]]:
+    """Reduce persisted telemetry to bounded statistics before any diagnostic call."""
+    names = ("P_PDG", "P_TPT", "T_TPT", "P_MON_CKP", "T_JUS_CKP", "P_JUS_CKGL", "QGL")
+    rows = (await session.scalars(select(Telemetry).where(
+        Telemetry.well_id == inference.well_id, Telemetry.timestamp >= inference.window_start,
+        Telemetry.timestamp <= inference.window_end).order_by(Telemetry.timestamp))).all() if inference.window_start and inference.window_end else []
+    variables = []
+    for name in names:
+        values = [float(getattr(row, name.lower())) for row in rows]
+        if values:
+            variables.append({"name": name, "mean": round(fmean(values), 4), "min": min(values), "max": max(values),
+                              "delta": round(values[-1] - values[0], 4), "samples": len(values)})
+    alarms = (await session.scalars(select(Alarm).where(Alarm.well_id == inference.well_id)
+                                    .order_by(desc(Alarm.raised_at)).limit(5))).all()
+    alarm_summary = [{"event_type": row.event_type, "severity": row.severity, "status": row.status,
+                      "raised_at": row.raised_at.isoformat() if row.raised_at else None} for row in alarms]
+    return {"variables": variables, "sample_count": len(rows), "alarm_context": f"最近报警记录：{len(alarm_summary)} 条。"}, alarm_summary
 
 
 @app.get("/api/health")
@@ -182,7 +202,8 @@ async def create_diagnostic(
     comparison = (await session.scalars(
         select(InferenceResult).where(InferenceResult.well_id == well_id, InferenceResult.telemetry_id == inference.telemetry_id)
     )).all()
-    output = diagnostic_service.diagnose(inference, comparison)
+    telemetry_summary, alarm_summary = await diagnostic_evidence(session, inference)
+    output = await diagnostic_service.diagnose_with_llm(inference, comparison, telemetry_summary, alarm_summary)
     record = DiagnosticRecord(
         well_id=well_id, inference_id=inference.id, request_id=output.request_id,
         status=output.status, model_version=inference.model_version,

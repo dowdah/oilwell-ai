@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     explainability_dir: Path = Path("/models/explanations")
     diagnostic_min_confidence: float = 0.60
     diagnostic_max_sources: int = 3
+    # Optional OpenAI-compatible analysis layer. Disabled by default: monitoring
+    # and deterministic diagnostic templates remain available without an API.
+    diagnostic_llm_enabled: bool = False
+    diagnostic_llm_base_url: str | None = None
+    diagnostic_llm_api_key: str | None = None
+    diagnostic_llm_model: str | None = None
+    diagnostic_llm_timeout_seconds: float = 8.0
 
 
 @lru_cache

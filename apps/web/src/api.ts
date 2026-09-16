@@ -17,7 +17,7 @@ export type ModelStatus = {
   version: string | null; training_data_version: string | null; metrics: Record<string, number> | null
   feature_schema_version: string | null
 }
-export type Citation = { id: string; title: string; url: string; version: string; license: string }
+export type Citation = { id: string; title: string; url: string; version: string; license: string; source_identifier?: string; section?: string | null }
 export type Diagnostic = {
   id: number; request_id: string; well_id: string; inference_id: number; status: 'completed' | 'refused'
   model_version: string | null; knowledge_base_version: string; explanation_version: string | null

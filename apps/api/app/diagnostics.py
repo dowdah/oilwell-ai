@@ -1,19 +1,17 @@
-"""Controlled, auditable RAG-style teaching diagnostics.
-
-The module deliberately has no Telemetry, MQTT, command, or LLM client imports.
-It can only work with persisted model-result summaries and reviewed local text.
-"""
+"""Controlled, auditable RAG diagnostics with an optional external LLM layer."""
 
 from __future__ import annotations
 
 import json
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 from uuid import uuid4
+
+import httpx
 
 from .config import Settings
 
@@ -56,6 +54,8 @@ class KnowledgeDocument:
     license: str
     tags: tuple[str, ...]
     excerpt: str
+    source_identifier: str
+    section: str | None
 
 
 class KnowledgeBase:
@@ -66,6 +66,7 @@ class KnowledgeBase:
             id=item["id"], title=item["title"], url=item["url"],
             version=item["version"], license=item["license"],
             tags=tuple(item["tags"]), excerpt=item["excerpt"],
+            source_identifier=str(item.get("source_identifier", item["id"])), section=item.get("section"),
         ) for item in payload["documents"])
 
     def retrieve(self, query: str, limit: int) -> list[KnowledgeDocument]:
@@ -125,7 +126,8 @@ class ControlledDiagnosticService:
         self.knowledge_base = knowledge_base or KnowledgeBase()
         self.explanations = ExplainabilityCatalog(settings.explainability_dir)
 
-    def diagnose(self, active: InferenceSummary, comparison: list[InferenceSummary]) -> DiagnosticOutput:
+    def diagnose(self, active: InferenceSummary, comparison: list[InferenceSummary], telemetry_summary: dict[str, Any] | None = None,
+                 alarm_summary: list[dict[str, Any]] | None = None) -> DiagnosticOutput:
         comparison = [row for row in comparison if row.telemetry_id == active.telemetry_id
                       and row.well_id == active.well_id and row.window_start == active.window_start and row.window_end == active.window_end]
         summary = {
@@ -138,6 +140,7 @@ class ControlledDiagnosticService:
             "comparison": [{"model_type": row.model_type, "model_mode": row.model_mode,
                             "predicted_class": row.predicted_class, "confidence": row.confidence}
                            for row in comparison],
+            "telemetry_summary": telemetry_summary or {}, "recent_alarms": alarm_summary or [],
         }
         request_id = str(uuid4())
         if active.status != "predicted" or active.model_mode != "active":
@@ -148,7 +151,7 @@ class ControlledDiagnosticService:
             return self._refusal(request_id, summary, "模型置信度不足，诊断服务拒绝给出事件解释。")
         sources = self.knowledge_base.retrieve(active.predicted_class or "", self.settings.diagnostic_max_sources)
         if not sources:
-            return self._refusal(request_id, summary, "知识库没有可引用的公开资料，诊断服务拒答。")
+            return self._refusal(request_id, summary, "Insufficient retrieved evidence：知识库没有可引用的公开资料，诊断服务拒答。")
         explanation = self.explanations.find(active)
         source_lines = "；".join(f"[{item.id}] {item.title}：{item.excerpt}" for item in sources)
         evidence = "未找到同窗口的离线 SHAP 摘要，不能推断特征贡献。"
@@ -166,17 +169,71 @@ class ControlledDiagnosticService:
             f"（置信度 {self._percentage(shadow.confidence)}）。"
         )
         anomaly_score = self._percentage(active.anomaly_score)
-        content = (
-            f"模型将该窗口分类为“{active.predicted_class}”（置信度 {active.confidence:.1%}，异常分数 {anomaly_score}）。"
-            f"{contrast} {evidence} 相关教学资料：{source_lines}。"
-            "该说明只描述模型证据与公开资料，未包含完整原始时序、现场参数或控制建议。" + DISCLAIMER
-        )
-        citations = [{"id": item.id, "title": item.title, "url": item.url, "version": item.version, "license": item.license} for item in sources]
+        content = self._template(summary, active, contrast, evidence, source_lines, "LLM analysis unavailable")
+        citations = [{"id": item.id, "title": item.title, "url": item.url, "version": item.version, "license": item.license,
+                      "source_identifier": item.source_identifier, "section": item.section} for item in sources]
         return DiagnosticOutput(
             request_id, "completed", content, citations, summary,
             self.knowledge_base.version, explanation_version,
             evidence_status, degradation_reasons,
         )
+
+    async def diagnose_with_llm(self, active: InferenceSummary, comparison: list[InferenceSummary],
+                                telemetry_summary: dict[str, Any] | None = None,
+                                alarm_summary: list[dict[str, Any]] | None = None) -> DiagnosticOutput:
+        """Never let external analysis alter sources, alarms, or model evidence."""
+        output = self.diagnose(active, comparison, telemetry_summary, alarm_summary)
+        if output.status != "completed":
+            return output
+        if not (self.settings.diagnostic_llm_enabled and self.settings.diagnostic_llm_base_url
+                and self.settings.diagnostic_llm_api_key and self.settings.diagnostic_llm_model):
+            return replace(output, evidence_status="degraded", degradation_reasons=output.degradation_reasons + ["LLM analysis unavailable"])
+        try:
+            text = await self._llm_analysis(output.input_summary, output.citations)
+            return replace(output, content=text, evidence_status="complete",
+                           degradation_reasons=[item for item in output.degradation_reasons if item != "LLM analysis unavailable"])
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return replace(output, evidence_status="degraded", degradation_reasons=output.degradation_reasons + ["LLM analysis unavailable"])
+
+    async def _llm_analysis(self, summary: dict[str, Any], citations: list[dict[str, str]]) -> str:
+        source_lines = "\n".join(f"[{row['id']}] {row['title']} — {row['version']}" for row in citations)
+        prompt = {
+            "evidence": summary,
+            "retrieved_sources": citations,
+            "rules": ["Experimental model output is not a fault fact.", "Do not invent citations or operating instructions.",
+                      "Use uncertainty language and only the supplied evidence."],
+        }
+        messages = [
+            {"role": "developer", "content": "Return JSON with monitoring_summary, model_evidence, key_variables, possible_interpretation, recommended_checks, limitations. Chinese prose only; no citations or control commands."},
+            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
+        ]
+        url = self.settings.diagnostic_llm_base_url.rstrip("/") + "/chat/completions"
+        async with httpx.AsyncClient(timeout=self.settings.diagnostic_llm_timeout_seconds) as client:
+            response = await client.post(url, headers={"Authorization": f"Bearer {self.settings.diagnostic_llm_api_key}"},
+                                         json={"model": self.settings.diagnostic_llm_model, "messages": messages, "temperature": 0})
+            response.raise_for_status()
+        payload = response.json()
+        content = payload["choices"][0]["message"]["content"]
+        parsed = json.loads(content)
+        required = ("monitoring_summary", "model_evidence", "key_variables", "possible_interpretation", "recommended_checks", "limitations")
+        if not all(isinstance(parsed.get(key), str) and parsed[key].strip() for key in required):
+            raise ValueError("LLM response does not satisfy the diagnostic contract")
+        references = "\n".join(f"- [{row['id']}] {row['title']} ({row['version']})" for row in citations)
+        return (f"## Monitoring Summary\n{parsed['monitoring_summary']}\n\n## Model Evidence\nExperimental model output: {parsed['model_evidence']}\n\n"
+                f"## Key Variables\n{parsed['key_variables']}\n\n## Possible Interpretation\n{parsed['possible_interpretation']}\n\n"
+                f"## Recommended Checks\n{parsed['recommended_checks']}\n\n## References\n{references}\n\n## Limitations\n{parsed['limitations']}\n{DISCLAIMER}")
+
+    def _template(self, summary: dict[str, Any], active: InferenceSummary, contrast: str, evidence: str,
+                  source_lines: str, llm_status: str) -> str:
+        telemetry = summary.get("telemetry_summary") or {}
+        variables = telemetry.get("variables") or "同窗口七变量统计不可用。"
+        alarms = telemetry.get("alarm_context") or "未提供报警历史摘要。"
+        return (f"## Monitoring Summary\n井 {active.well_id} 的窗口为 {summary['window_start']} 至 {summary['window_end']}。{alarms}\n\n"
+                f"## Model Evidence\nExperimental model output：模型将该窗口分类为“{active.predicted_class}”（置信度 {active.confidence:.1%}，异常分数 {self._percentage(active.anomaly_score)}）。{contrast}\n\n"
+                f"## Key Variables\n{evidence} 七变量摘要：{variables}\n\n"
+                "## Possible Interpretation\n上述内容仅表示可能的监测线索，需要结合现场工况进一步核实，不能确认故障原因。\n\n"
+                "## Recommended Checks\n请由人员核对传感器质量、现场运行记录和既有报警历史；不生成自动控制指令。\n\n"
+                f"## References\n{source_lines}\n\n## Limitations\n{llm_status}。仅使用本次检索到的资料；模型输出为实验性结果，不具备已验证的跨井泛化能力。\n{DISCLAIMER}")
 
     @staticmethod
     def _percentage(value: float | None) -> str:

@@ -101,7 +101,7 @@ def test_missing_knowledge_entry_refuses_and_records_its_reason(tmp_path) -> Non
     output = service.diagnose(result(), [])
     assert output.status == "refused"
     assert output.evidence_status == "refused"
-    assert output.degradation_reasons == ["知识库没有可引用的公开资料，诊断服务拒答。"]
+    assert output.degradation_reasons == ["Insufficient retrieved evidence：知识库没有可引用的公开资料，诊断服务拒答。"]
 
 
 def test_unknown_class_cannot_receive_irrelevant_generic_citations(tmp_path):
@@ -133,3 +133,17 @@ def test_corrupt_explanation_safely_degrades_instead_of_failing_request(tmp_path
     (tmp_path / 'explanation_manifest.json').write_text('{invalid')
     output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(), [])
     assert output.evidence_status == 'degraded'
+
+
+@pytest.mark.asyncio
+async def test_llm_unavailable_keeps_template_and_real_retriever_citations(tmp_path):
+    output = await ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose_with_llm(
+        result(), [], {"variables": [{"name": "QGL", "mean": 1.2}], "alarm_context": "最近报警记录：0 条。"}, []
+    )
+    assert output.status == "completed"
+    assert output.evidence_status == "degraded"
+    assert "LLM analysis unavailable" in output.degradation_reasons
+    assert "## Monitoring Summary" in output.content
+    assert "Experimental model output" in output.content
+    assert "## References" in output.content
+    assert output.citations and {item["id"] for item in output.citations} <= {item.id for item in KnowledgeBase().documents}

@@ -11,6 +11,8 @@
       "url": "https://github.com/petrobras/3W",
       "version": "repository main, reviewed 2026-09-11",
       "license": "CC BY 4.0 for dataset files; repository terms apply to documentation",
+      "source_identifier": "petrobras-3w-readme",
+      "section": "Repository documentation",
       "tags": ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line", "3W", "dataset"],
       "excerpt": "3W is a public benchmark of labelled multivariate time-series instances for undesirable oil-well events. Labels are teaching and evaluation evidence, not an operating procedure."
     },
@@ -20,6 +22,8 @@
       "url": "https://www.energy.gov/documents/ch7-si-oil-and-gas-technologiespdf",
       "version": "2015 report, reviewed 2026-09-11",
       "license": "U.S. government work; verify reuse conditions before redistribution",
+      "source_identifier": "DOE-CH7-SI-2015",
+      "section": "Flow assurance context",
       "tags": ["Flow Instability", "Hydrate in Service Line", "flow assurance", "teaching"],
       "excerpt": "Flow assurance concerns uninterrupted hydrocarbon production and identifies several phenomena, including hydrate formation, as possible impediments. This broad context cannot identify a field cause from a model result alone."
     },
@@ -29,6 +33,8 @@
       "url": "https://github.com/dowdah/oilwell-ai/blob/main/docs/phase-3-demo-runbook.md",
       "version": "repository commit aa997f3",
       "license": "MIT",
+      "source_identifier": "phase-3-runbook",
+      "section": "Active and shadow inference boundary",
       "tags": ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line", "shadow", "XGBoost", "TCN"],
       "excerpt": "The active XGBoost result is the only alarm source. TCN runs in shadow mode for comparison and must not change Alarm or AlarmState."
     }
