@@ -26,4 +26,4 @@
 
 - 三个集合均同时具有 Normal 与 Abnormal 窗口，且井集合互斥。
 - 原始异常事件类别的跨井覆盖由上表披露；未在 held-out test 出现的类别不得声称具有跨井泛化能力。
-- 旧 C2 的 187 实例协议保存在 `../historical/c2-unreproduced-freeze/`，是历史记录，不是本实验输入。
+- 旧 C2 的 187 实例协议不在本分支中；其未复现的历史结论仅记录在 `../historical/c2-baseline-status.md`，不是本实验输入。
