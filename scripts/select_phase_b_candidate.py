@@ -8,7 +8,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("reports", nargs="+", type=Path)
-parser.add_argument("--output", type=Path, default=Path("docs/phase-b/candidate-selection.json"))
+parser.add_argument("--output", type=Path, default=Path("ml/artifacts/phase-b/candidate-selection.json"))
 args = parser.parse_args()
 rows = [json.loads(path.read_text()) for path in args.reports]
 keys = {(row["selection_sha256"], row["split_sha256"]) for row in rows}

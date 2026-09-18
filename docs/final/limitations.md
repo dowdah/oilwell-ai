@@ -2,7 +2,7 @@
 
 ## Dataset
 
-当前本地仅有 55 个可读 3W 实例；旧 187-instance 协议无法在这份本地副本上复现。完整审计见 `docs/phase-b/available-data-audit.md`。
+当前本地仅有 55 个可读 3W 实例；旧 187-instance 协议无法在这份本地副本上复现。完整审计见[数据审计](../phase-b/available-data-audit.md)。
 
 ## Domain Shift
 
@@ -28,5 +28,10 @@ Phase B binary candidate 状态为 `rejected`，从未部署。不得将实验�
 - 输入受检索证据和窗口统计约束，不读取完整原始时序。
 - citations 只能来自本次 retriever 返回集合。
 - 外部兼容 API 不可用时返回模板报告和 `LLM analysis unavailable`。
+
+## Retrieval and deployment
+
+- 当前检索仅匹配受审阅静态知识清单；未提供文档上传、embedding、pgvector 或 FAISS 索引。
+- 本仓库保留的是历史验证结论，不是当前 ECS/Pi 的部署状态证明。任何重新部署都必须重新验证制品、数据库、MQTT、WebSocket 与浏览器路径。
 
 系统是教学和人工辅助分析系统，不用于自动控制或生产决策。

@@ -28,12 +28,12 @@
       "excerpt": "Flow assurance concerns uninterrupted hydrocarbon production and identifies several phenomena, including hydrate formation, as possible impediments. This broad context cannot identify a field cause from a model result alone."
     },
     {
-      "id": "phase-3-runbook",
-      "title": "OilWell AI Phase 3 shadow inference runbook",
-      "url": "https://github.com/dowdah/oilwell-ai/blob/main/docs/phase-3-demo-runbook.md",
-      "version": "repository commit aa997f3",
+      "id": "oilwell-model-boundary",
+      "title": "OilWell AI active and shadow model boundary",
+      "url": "https://github.com/dowdah/oilwell-ai/blob/main/docs/final/system-architecture.md",
+      "version": "final delivery documentation",
       "license": "MIT",
-      "source_identifier": "phase-3-runbook",
+      "source_identifier": "oilwell-model-boundary",
       "section": "Active and shadow inference boundary",
       "tags": ["Normal", "Severe Slugging", "Flow Instability", "Hydrate in Service Line", "shadow", "XGBoost", "TCN"],
       "excerpt": "The active XGBoost result is the only alarm source. TCN runs in shadow mode for comparison and must not change Alarm or AlarmState."

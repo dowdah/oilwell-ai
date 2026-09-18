@@ -34,6 +34,6 @@
 - 验证集没有 class 3，且测试仅为 `WELL-00014`；不能据此主张任一异常类型或整体异常检测的稳定跨井泛化。
 - 该结果否定的是当前可读数据、冻结协议和该候选组合，不是对未取得数据的结论。
 - 本地离线制品保存在忽略路径 `ml/artifacts/phase-b/binary-candidate/`：`xgboost_binary.json`、`model_metadata.json`、`metrics.json`、`threshold.json`；模型 SHA-256 为 `fd3a5e4014714b52d4bd87e71add404970e3f36befb317188918d11062edc590`。
-- 旧 C2 abnormal recall `0.0051782` 仅是历史记录，未在当前本地数据副本复现；详见 [C2 历史状态](historical/c2-baseline-status.md)。
+- 旧 C2 abnormal recall `0.0051782` 仅是未复现的历史记录，不构成当前候选或交付能力证据。
 
 本阶段在此结束；没有修改 API、frontend、database、Edge、MQTT 或 production deployment。

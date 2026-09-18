@@ -17,12 +17,12 @@
 - 3W 真实油井数据回放与树莓派 Edge/Cloud 协同。
 - MQTT 遥测、7 变量实时监控、PostgreSQL 历史记录与 Alarm/history。
 - XGBoost active 与 TCN shadow 的时序推理边界，以及 WebSocket 驱动的 Vue 3 Dashboard。
-- 轻量知识检索、受约束引用、可选 OpenAI-compatible LLM 辅助诊断和 `LLM analysis unavailable` 模板降级。
+- 基于受审阅静态知识清单的轻量关键词检索、受约束引用、可选 OpenAI-compatible LLM 辅助诊断和 `LLM analysis unavailable` 模板降级。
 - 诊断只基于窗口统计、实验性模型输出、报警摘要和真实检索资料；不读取完整原始时序，不产生控制命令。
 
 ## AI Model Status
 
-- Phase A 工程推理链路成立；active/shadow、持久化、告警和诊断边界均已验证。
+- Phase A 曾完成工程推理链路验证；active/shadow、持久化、告警和诊断边界的证据状态见[测试矩阵](docs/final/test-matrix.md)。
 - 四分类与二分类的跨井泛化仍受数据覆盖和 domain shift 限制。
 - Phase B Binary XGBoost candidate 为 **rejected**，从未部署；详见 [Phase B 报告](docs/phase-b/final-report.md)。
 - LLM 输出仅是辅助分析，必须标记为 `Experimental model output`，不是确定故障事实或自动控制结论。
@@ -65,7 +65,7 @@ PYTHONPATH=apps/api python -m pytest apps/api/tests -q
 cd apps/web && npm ci && npm run build
 ```
 
-最新 Phase B/C merge gate：API 33 passed、9 PostgreSQL integration tests skipped（本次未启动临时 PostgreSQL）；前端 production build 通过。最近一次完整 PostgreSQL 环境验证为 9 passed；Phase A 端到端验证详见 [测试矩阵](docs/final/test-matrix.md)。
+最新 Phase B/C merge gate：API 33 passed、9 PostgreSQL integration tests skipped（本次未启动临时 PostgreSQL）；前端 production build 通过。最近一次完整 PostgreSQL 环境验证为 9 passed。历史端到端证据与未重复验证项见[测试矩阵](docs/final/test-matrix.md)。
 
 ## Limitations
 
