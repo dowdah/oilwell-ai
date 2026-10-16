@@ -3,7 +3,8 @@
 .env.*
 !.env.example
 infra/certs/
-infra/mosquitto/passwords/
+infra/mosquitto/passwords
+llm.env
 
 # Data and model artifacts
 data/

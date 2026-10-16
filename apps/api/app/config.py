@@ -1,6 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,10 +33,12 @@ class Settings(BaseSettings):
     # Optional OpenAI-compatible analysis layer. Disabled by default: monitoring
     # and deterministic diagnostic templates remain available without an API.
     diagnostic_llm_enabled: bool = False
+    diagnostic_llm_provider: Literal["openai-compatible", "deepseek"] = "openai-compatible"
     diagnostic_llm_base_url: str | None = None
     diagnostic_llm_api_key: str | None = None
     diagnostic_llm_model: str | None = None
     diagnostic_llm_timeout_seconds: float = 8.0
+    diagnostic_llm_max_output_tokens: int = Field(default=2048, ge=128, le=8192)
 
 
 @lru_cache

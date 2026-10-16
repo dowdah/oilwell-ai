@@ -18,6 +18,6 @@
 
 ## Phase C LLM 边界
 
-- OpenAI-compatible API 仅接收已压缩的窗口统计、实验性模型输出、报警摘要和本次实际检索到的分段；不接收完整原始时序。
-- 返回文本必须使用不确定表述，不产生控制指令。References 由 retriever 返回集合确定，LLM 不能增加引用。
+- DeepSeek/OpenAI-compatible API 仅接收窗口统计、实验性模型输出、报警摘要及本次检索条目的引用元数据；不接收完整原始时序或分段全文。`excerpt` 用于本地关键词检索和模板报告。
+- 提示要求分析使用不确定表述并禁止操作指令，但生成文本仍需人工核验。References 与结构化 citations 由系统按 retriever 返回集合生成；系统不执行现场控制。
 - API 未配置、不可用或返回不合约格式时，系统仍生成模板报告，并明确 `LLM analysis unavailable`。

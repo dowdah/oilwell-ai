@@ -190,33 +190,56 @@ class ControlledDiagnosticService:
             return replace(output, evidence_status="degraded", degradation_reasons=output.degradation_reasons + ["LLM analysis unavailable"])
         try:
             text = await self._llm_analysis(output.input_summary, output.citations)
-            return replace(output, content=text, evidence_status="complete",
-                           degradation_reasons=[item for item in output.degradation_reasons if item != "LLM analysis unavailable"])
+            reasons = [item for item in output.degradation_reasons if item != "LLM analysis unavailable"]
+            return replace(output, content=text, evidence_status="degraded" if reasons else "complete",
+                           degradation_reasons=reasons,
+                           input_summary={**output.input_summary, "llm": {
+                               "provider": self.settings.diagnostic_llm_provider,
+                               "model": self.settings.diagnostic_llm_model, "status": "completed",
+                           }})
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
             return replace(output, evidence_status="degraded", degradation_reasons=output.degradation_reasons + ["LLM analysis unavailable"])
 
     async def _llm_analysis(self, summary: dict[str, Any], citations: list[dict[str, str]]) -> str:
-        source_lines = "\n".join(f"[{row['id']}] {row['title']} — {row['version']}" for row in citations)
         prompt = {
             "evidence": summary,
             "retrieved_sources": citations,
             "rules": ["Experimental model output is not a fault fact.", "Do not invent citations or operating instructions.",
                       "Use uncertainty language and only the supplied evidence."],
         }
+        deepseek = self.settings.diagnostic_llm_provider == "deepseek"
         messages = [
-            {"role": "developer", "content": "Return JSON with monitoring_summary, model_evidence, key_variables, possible_interpretation, recommended_checks, limitations. Chinese prose only; no citations or control commands."},
+            {"role": "system" if deepseek else "developer", "content": (
+                "Return a JSON object with exactly six nonempty string fields: monitoring_summary, "
+                "model_evidence, key_variables, possible_interpretation, recommended_checks, limitations. "
+                "Use concise Chinese prose for the values, no Markdown fences, citations, URLs or control commands. "
+                "Use only the supplied evidence; do not invent SHAP contributions or claim a confirmed fault. "
+                "Example JSON: {\"monitoring_summary\":\"窗口监测摘要\",\"model_evidence\":\"实验模型证据\","
+                "\"key_variables\":\"已提供的变量统计\",\"possible_interpretation\":\"尚需核实的可能解释\","
+                "\"recommended_checks\":\"人工核查记录\",\"limitations\":\"证据和泛化限制\"}."
+            )},
             {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)},
         ]
+        request = {"model": self.settings.diagnostic_llm_model, "messages": messages, "temperature": 0}
+        if deepseek:
+            request.update({"thinking": {"type": "disabled"}, "response_format": {"type": "json_object"},
+                            "max_tokens": self.settings.diagnostic_llm_max_output_tokens, "stream": False})
         url = self.settings.diagnostic_llm_base_url.rstrip("/") + "/chat/completions"
         async with httpx.AsyncClient(timeout=self.settings.diagnostic_llm_timeout_seconds) as client:
             response = await client.post(url, headers={"Authorization": f"Bearer {self.settings.diagnostic_llm_api_key}"},
-                                         json={"model": self.settings.diagnostic_llm_model, "messages": messages, "temperature": 0})
+                                         json=request)
             response.raise_for_status()
         payload = response.json()
-        content = payload["choices"][0]["message"]["content"]
+        choices = payload.get("choices") if isinstance(payload, dict) else None
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise ValueError("LLM response has no completion choice")
+        choice = choices[0]
+        if choice.get("finish_reason") not in (None, "stop"):
+            raise ValueError("LLM completion was interrupted")
+        content = choice["message"]["content"]
         parsed = json.loads(content)
         required = ("monitoring_summary", "model_evidence", "key_variables", "possible_interpretation", "recommended_checks", "limitations")
-        if not all(isinstance(parsed.get(key), str) and parsed[key].strip() for key in required):
+        if not isinstance(parsed, dict) or not all(isinstance(parsed.get(key), str) and parsed[key].strip() for key in required):
             raise ValueError("LLM response does not satisfy the diagnostic contract")
         references = "\n".join(f"- [{row['id']}] {row['title']} ({row['version']})" for row in citations)
         return (f"## Monitoring Summary\n{parsed['monitoring_summary']}\n\n## Model Evidence\nExperimental model output: {parsed['model_evidence']}\n\n"

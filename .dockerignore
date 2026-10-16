@@ -15,5 +15,6 @@ data/
 *.pkl
 *.joblib
 infra/certs/
-infra/mosquitto/passwords/
+infra/mosquitto/passwords
+llm.env
 docs/.local/

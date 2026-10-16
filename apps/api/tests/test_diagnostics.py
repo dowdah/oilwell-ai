@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from dataclasses import dataclass
 import json
 
+import httpx
 import pytest
 
 from app.config import Settings
@@ -147,3 +148,100 @@ async def test_llm_unavailable_keeps_template_and_real_retriever_citations(tmp_p
     assert "Experimental model output" in output.content
     assert "## References" in output.content
     assert output.citations and {item["id"] for item in output.citations} <= {item.id for item in KnowledgeBase().documents}
+
+
+def deepseek_service(tmp_path):
+    return ControlledDiagnosticService(Settings(
+        explainability_dir=tmp_path, diagnostic_llm_enabled=True,
+        diagnostic_llm_provider="deepseek", diagnostic_llm_base_url="https://api.deepseek.com/",
+        diagnostic_llm_api_key="test-key-not-real", diagnostic_llm_model="deepseek-flash",
+        diagnostic_llm_timeout_seconds=30,
+    ))
+
+
+def mock_llm_transport(monkeypatch, handler):
+    client = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: client(
+        **kwargs, transport=httpx.MockTransport(handler),
+    ))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("has_explanation", [False, True])
+async def test_deepseek_json_contract_and_evidence_provenance(tmp_path, monkeypatch, has_explanation):
+    active = result()
+    if has_explanation:
+        (tmp_path / "explanation_manifest.json").write_text(json.dumps({
+            "version": "explain-v1", "model_version": active.model_version,
+            "feature_schema_version": active.feature_schema_version,
+            "window_summaries": [{"well_id": active.well_id,
+                "window_start": active.window_start.isoformat(), "window_end": active.window_end.isoformat(),
+                "top_features": ["QGL__mean"], "trend_summary": "同窗口离线解释。"}],
+        }))
+    report = {key: "需要结合现场记录人工核验。" for key in (
+        "monitoring_summary", "model_evidence", "key_variables", "possible_interpretation",
+        "recommended_checks", "limitations",
+    )}
+    requests = []
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"model": "deepseek-flash", "choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(report),
+            "reasoning_content": "This must not appear in the report."},
+        }]})
+    mock_llm_transport(monkeypatch, handler)
+    service = deepseek_service(tmp_path)
+    summary = {"variables": [{"name": "QGL", "mean": 1.2}], "sample_count": 180}
+    output = await service.diagnose_with_llm(active, [active], summary, [])
+    assert len(requests) == 1
+    request = requests[0]
+    assert str(request.url) == "https://api.deepseek.com/chat/completions"
+    assert request.headers["authorization"] == "Bearer test-key-not-real"
+    body = json.loads(request.content)
+    assert body["model"] == "deepseek-flash"
+    assert body["messages"][0]["role"] == "system"
+    assert "JSON" in body["messages"][0]["content"]
+    assert body["thinking"] == {"type": "disabled"}
+    assert body["response_format"] == {"type": "json_object"}
+    assert body["max_tokens"] == 2048 and body["stream"] is False
+    evidence = json.loads(body["messages"][1]["content"])
+    assert evidence["evidence"]["telemetry_summary"] == summary
+    assert "measurements" not in json.dumps(evidence)
+    assert output.status == "completed"
+    assert "LLM analysis unavailable" not in output.content
+    assert output.evidence_status == ("complete" if has_explanation else "degraded")
+    assert bool(output.degradation_reasons) is not has_explanation
+    assert output.input_summary["llm"] == {"provider": "deepseek", "model": "deepseek-flash", "status": "completed"}
+    assert "Experimental model output" in output.content
+    assert "This must not appear" not in output.content
+    assert {item["id"] for item in output.citations} == {item["id"] for item in evidence["retrieved_sources"]}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["auth", "rate_limit", "timeout", "empty_choices", "not_json", "array_json", "missing_fields", "truncated"])
+async def test_deepseek_failures_keep_auditable_template(tmp_path, monkeypatch, failure):
+    def handler(request):
+        if failure == "timeout":
+            raise httpx.ReadTimeout("test timeout", request=request)
+        if failure in {"auth", "rate_limit"}:
+            return httpx.Response(401 if failure == "auth" else 429, json={"error": "unavailable"})
+        if failure == "empty_choices":
+            return httpx.Response(200, json={"choices": []})
+        content = {"not_json": "```json\n{}\n```", "array_json": "[]", "missing_fields": "{}"}.get(failure, "{}")
+        return httpx.Response(200, json={"choices": [{"finish_reason": "length" if failure == "truncated" else "stop",
+            "message": {"content": content}}]})
+    mock_llm_transport(monkeypatch, handler)
+    output = await deepseek_service(tmp_path).diagnose_with_llm(result(), [])
+    assert output.status == "completed" and output.evidence_status == "degraded"
+    assert "LLM analysis unavailable" in output.degradation_reasons
+    assert "LLM analysis unavailable" in output.content
+    assert output.citations and "llm" not in output.input_summary
+
+
+@pytest.mark.asyncio
+async def test_deepseek_is_not_called_for_refused_evidence(tmp_path, monkeypatch):
+    def handler(request):
+        pytest.fail("Refused evidence must not reach the external provider")
+    mock_llm_transport(monkeypatch, handler)
+    output = await deepseek_service(tmp_path).diagnose_with_llm(result(confidence=0.2), [])
+    assert output.status == "refused"
