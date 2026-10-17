@@ -130,6 +130,32 @@ def test_shap_window_from_a_different_well_is_not_reused(tmp_path):
     assert 'Unrelated window' not in output.content
 
 
+@pytest.mark.parametrize("mismatch", ["legacy_missing_well_id", "model_version", "feature_schema_version", "window_start", "window_end"])
+def test_shap_identity_and_window_contract_must_all_match(tmp_path, mismatch):
+    active = result()
+    summary = {
+        "well_id": active.well_id, "window_start": active.window_start.isoformat(),
+        "window_end": active.window_end.isoformat(), "top_features": ["QGL__mean"],
+        "trend_summary": "This mismatched explanation must not be reused.",
+    }
+    manifest = {
+        "version": "explain-v1", "model_version": active.model_version,
+        "feature_schema_version": active.feature_schema_version, "window_summaries": [summary],
+    }
+    if mismatch == "legacy_missing_well_id":
+        del summary["well_id"]
+    elif mismatch in ("model_version", "feature_schema_version"):
+        manifest[mismatch] = "another-version"
+    else:
+        summary[mismatch] = (getattr(active, mismatch) + timedelta(seconds=1)).isoformat()
+    (tmp_path / "explanation_manifest.json").write_text(json.dumps(manifest))
+    output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(active, [active])
+    assert output.evidence_status == "degraded"
+    assert output.explanation_version is None
+    assert output.degradation_reasons == ["未找到同窗口的离线 SHAP 摘要；未推断特征贡献。"]
+    assert summary["trend_summary"] not in output.content
+
+
 def test_corrupt_explanation_safely_degrades_instead_of_failing_request(tmp_path):
     (tmp_path / 'explanation_manifest.json').write_text('{invalid')
     output = ControlledDiagnosticService(Settings(explainability_dir=tmp_path)).diagnose(result(), [])

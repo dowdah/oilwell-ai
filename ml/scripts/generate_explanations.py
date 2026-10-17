@@ -20,7 +20,7 @@ def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir", type=Path, required=True)
     parser.add_argument("--windows-json", type=Path, required=True,
-                        help="Private offline input: [{window_start, window_end, features, trend_summary}]")
+                        help="Private offline input: [{well_id, window_start, window_end, features, trend_summary}]")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--top-k", type=int, default=5)
     return parser.parse_args()
@@ -35,7 +35,20 @@ def main() -> None:
     windows = json.loads(args.windows_json.read_text())
     if not windows:
         raise ValueError("at least one offline feature window is required")
+    for item in windows:
+        well_id = item.get("well_id")
+        if not isinstance(well_id, str) or not well_id.strip() or well_id != well_id.strip():
+            raise ValueError("each explanation window requires a non-empty well_id without surrounding whitespace")
+        start, end = (datetime.fromisoformat(item[key]) for key in ("window_start", "window_end"))
+        if start.tzinfo is None or end.tzinfo is None:
+            raise ValueError("explanation window timestamps must include a timezone")
+        if (end - start).total_seconds() != metadata["window_seconds"] - 1:
+            raise ValueError("explanation window must match the model's consecutive 1 Hz row span (179 seconds for 180 rows)")
+        item["window_start"] = start.astimezone(timezone.utc).isoformat()
+        item["window_end"] = end.astimezone(timezone.utc).isoformat()
     matrix = np.array([[float(item["features"][feature]) for feature in features] for item in windows])
+    if not np.isfinite(matrix).all():
+        raise ValueError("explanation features must contain only finite values")
     model = XGBClassifier()
     model.load_model(args.model_dir / metadata["artifact_file"])
     probabilities = model.predict_proba(matrix)
@@ -49,6 +62,7 @@ def main() -> None:
     for index, item in enumerate(windows):
         ranked = np.argsort(np.abs(selected[index]))[::-1][:args.top_k]
         summaries.append({
+            "well_id": item["well_id"],
             "window_start": item["window_start"], "window_end": item["window_end"],
             "top_features": [features[position] for position in ranked],
             "contributions": {features[position]: round(float(selected[index, position]), 6) for position in ranked},

@@ -10,7 +10,7 @@ TIMESTAMP_COLUMNS = ("timestamp", "TIMESTAMP", "time", "TIME")
 
 
 def labelled_rows(path: Path, target_labels):
-    """Yield (timestamp, signals), or None to mark an invalid observation."""
+    """Yield observations; target_labels=None follows replay without label filtering."""
     import pyarrow.parquet as pq
     parquet = pq.ParquetFile(path)
     available = set(parquet.schema.names)
@@ -21,12 +21,13 @@ def labelled_rows(path: Path, target_labels):
         raise ValueError(f"{path.name} is missing required variables: {', '.join(missing)}")
     label = next((name for name in LABEL_COLUMNS if name in available), None)
     timestamp = next((name for name in TIMESTAMP_COLUMNS if name in available), None)
-    if label is None or timestamp is None:
+    if (label is None and target_labels is not None) or timestamp is None:
         raise ValueError(f"{path.name} requires observation labels and timestamps")
-    allowed = set(map(str, target_labels))
-    for batch in parquet.iter_batches(batch_size=4096, columns=[*mapping.values(), label, timestamp]):
+    allowed = None if target_labels is None else set(map(str, target_labels))
+    columns = [*mapping.values(), *([label] if label else []), timestamp]
+    for batch in parquet.iter_batches(batch_size=4096, columns=columns):
         for row in batch.to_pylist():
-            if (str(row[label]) not in allowed or not isinstance(row[timestamp], datetime)
+            if ((allowed is not None and str(row[label]) not in allowed) or not isinstance(row[timestamp], datetime)
                     or any(row[raw] is None or not math.isfinite(float(row[raw])) for raw in mapping.values())):
                 yield None
             else:

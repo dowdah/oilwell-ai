@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create one private, reproducible 180-second feature window per demo class.
+"""Create the first complete replay-aligned 180-row window per demo instance.
 
 The output is deliberately written by the caller to an ignored location. It
 contains derived feature values required by ``generate_explanations.py`` but no
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,15 +34,27 @@ def timestamp(value: object) -> str:
 
 def first_window(item: dict, data_root: Path, window_size: int) -> dict:
     path = data_root / item["source_path"]
-    for rows in labelled_window_records(path, item.get("observation_labels", [item["label"]]), window_size):
+    match = re.match(r"(WELL-\d+)_", path.name)
+    source_well = match.group(1) if match else None
+    declared_well = item.get("well_id")
+    if declared_well is not None and (not isinstance(declared_well, str) or not declared_well.strip()):
+        raise ValueError("well_id must be a non-empty string when supplied")
+    if source_well and declared_well and source_well != declared_well:
+        raise ValueError("well_id conflicts with the replay source filename")
+    well_id = source_well or declared_well
+    if not well_id:
+        raise ValueError("cannot determine well_id from metadata or replay source filename")
+    # Serving ignores event labels. Filtering them here can move the first
+    # window off the API's 10-second prediction cadence after a label change.
+    for rows in labelled_window_records(path, None, window_size):
         measurements = [values for _, values in rows]
         return {
             "label": item["label"], "label_name": item["label_name"],
-            "well_id": item["well_id"],
+            "well_id": well_id,
             "instance_id": item["instance_id"], "source_sha256": item["sha256"],
             "window_start": timestamp(rows[0][0]), "window_end": timestamp(rows[-1][0]),
             "features": dict(zip(FEATURE_NAMES, window_features(measurements), strict=True)),
-            "trend_summary": "该脱敏 180 秒窗口由离线流程选取；特征贡献仅描述模型证据，需由课程审阅人结合公开资料确认。",
+            "trend_summary": "该窗口包含回放起点后的首批 180 个连续 1 Hz 样本；特征贡献仅描述模型证据，不等同于实例类别或现场因果解释。",
         }
     raise ValueError(f"{path.name} contains no complete {window_size}-row window")
 
