@@ -6,7 +6,7 @@
 
 ## 1. 数据来源与保留资产
 
-源数据为 Petrobras 3W。上游 URL、原始提交号、四个样例与九个制品的路径、版本和 SHA-256 见 [演示资产清单](../docs/experiments/demo-assets.json)；本地 `ml/data/raw/petrobras-3w/` 保留提取自上游提交的 `LICENSE.md` 与 `CITATION.md`。数据许可和引用要求独立于项目源码的 MIT 许可证。
+源数据为 Petrobras 3W。上游 URL、原始提交号、四个样例与九个制品的路径、版本和 SHA-256 见 [演示资产清单](../docs/experiments/demo-assets.json)；本地 `ml/data/raw/petrobras-3w/` 保留提取自上游提交的数据许可 `dataset/LICENSE-CC-BY`（CC BY 4.0）、上游代码许可 `LICENSE.md` 与引用说明 `CITATION.md`。数据许可和引用要求独立于项目源码的 MIT 许可证。
 
 下载工具要求显式、获准的来源 URL，输出只能位于忽略目录 `ml/data/raw/`。它校验可选的 SHA-256，但不会自动解压，也不会替代来源与许可审查。获取数据后记录版本和引用，不将原始文件提交 Git 或上传 ECS。
 

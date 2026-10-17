@@ -18,6 +18,11 @@
         "path": "ml/data/raw/petrobras-3w/CITATION.md",
         "size_bytes": 1391,
         "sha256": "b9395170a4c3b1cf8f65f7e056a29f1dbaf9487142419e91b7323ee938ee6b56"
+      },
+      {
+        "path": "ml/data/raw/petrobras-3w/dataset/LICENSE-CC-BY",
+        "size_bytes": 18650,
+        "sha256": "7e7170e3cebf88a9f60c7b8421418323c09304da1af4d5e90f4da1dc1c8a2661"
       }
     ],
     "samples": [
@@ -49,7 +54,8 @@
         "source_path": "dataset/9/WELL-00014_20160304155906.parquet",
         "instance_class": "Hydrate in Service Line"
       }
-    ]
+    ],
+    "data_license": "CC-BY-4.0"
   },
   "models": [
     {

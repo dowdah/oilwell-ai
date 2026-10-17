@@ -39,7 +39,7 @@
 
 ## 外置数据、模型与配置
 
-源码包不含数据、模型二进制、真实配置或凭据。精简后本机仅保留四个演示 Parquet 样例及下列九个模型相关文件，来源、版本与 SHA-256 见 [演示资产清单](docs/experiments/demo-assets.json)。本地数据副本根保留上游 `LICENSE.md` 和 `CITATION.md`；再分发样例时需随附相应许可与引用说明。
+源码包不含数据、模型二进制、真实配置或凭据。精简后本机仅保留四个演示 Parquet 样例及下列九个模型相关文件，来源、版本与 SHA-256 见 [演示资产清单](docs/experiments/demo-assets.json)。本地数据副本保留数据专用的 `dataset/LICENSE-CC-BY`（CC BY 4.0）、上游代码的 `LICENSE.md` 和引用说明 `CITATION.md`；再分发样例时需随附数据许可与引用说明。
 
 | 材料 | 本地保留位置 / 接手要求 |
 | --- | --- |
