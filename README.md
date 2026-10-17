@@ -46,7 +46,7 @@
 | 四个 3W 样例 | `ml/data/raw/petrobras-3w/dataset/`；文件清单见使用说明第 3.1 节；按许可单独提供，Edge 只读挂载 |
 | XGBoost active | `ml/artifacts/current/`：`model_metadata.json`、`xgboost_model.json`、`metrics.json` |
 | TCN shadow | `ml/artifacts/tcn-shadow/`：`model_metadata.json`、`tcn_model.pt`、`tcn_config.json`、`scaler.json`、`comparison.json` |
-| 离线解释 | `ml/artifacts/explanations/explanation_manifest.json`；须匹配模型版本、井和窗口 |
+| 离线解释 | `ml/artifacts/explanations/explanation_manifest.json`；已修复井标识并重建四个首窗，须匹配模型版本、井和窗口，详见使用说明 |
 | 数据库、MQTT、TLS | 接手者创建受限 `.env`、账号、ACL 和证书；不随源码传播真实部署配置 |
 | DeepSeek API Key | 可选；接手者自行申请并写入服务器受限文件，源码默认关闭 LLM |
 | 历史报告、PPT、演示录像 | 生产数据库及个人材料不打包；新实例不自带报告 31，PPT/录像需按教师要求准备 |
@@ -72,11 +72,11 @@ docker compose --env-file .env -f infra/docker-compose.yml up -d --build
 ```bash
 PYTHONPATH=apps/api python -m pytest apps/api/tests -q
 PYTHONPATH=services/edge-agent python -m pytest services/edge-agent/tests -q
-PYTHONPATH=ml python -m pytest ml/tests -q
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=ml python -m pytest ml/tests -q
 cd apps/web && npm ci && npm run build
 ```
 
-2026-10-18 本轮及 2026-10-17 本地检查均为 API **44 passed、9 skipped**，Edge **16 passed**，ML **17 passed**，Web 构建通过。2026-09-22 DeepSeek 适配镜像曾通过完整 **53 项 API 测试**；不同日期和环境不能合并成一次验收。数据库测试配置及完整记录见 [评估与限制](docs/final/evaluation-and-limitations.md)。
+2026-10-18 SHAP 修复后：API **49 passed、9 skipped**，Edge **16 passed**，ML **33 passed**；四个本地首窗已验证解释匹配。ML 验证使用上面的单线程设置。此前同日精简阶段的 Web 构建通过，本次未改前端、未重复构建，也未部署生产。2026-09-22 DeepSeek 适配镜像曾通过完整 **53 项 API 测试**；不同日期和环境不能合并成一次验收。数据库测试配置及完整记录见 [评估与限制](docs/final/evaluation-and-limitations.md)。
 
 ## 打包与版本恢复
 

@@ -119,16 +119,24 @@
     {
       "role": "offline_explanation",
       "directory": "ml/artifacts/explanations",
-      "version": "xgb-shap-20260912T121943Z",
+      "version": "xgb-shap-20261017T210806Z",
       "model_type": "offline_shap",
-      "source_code_commit": null,
+      "source_code_commit": "e80758e1ff0982db4df9c515eb345aff1394ae3a",
       "files": [
         {
           "path": "ml/artifacts/explanations/explanation_manifest.json",
-          "size_bytes": 3236,
-          "sha256": "fe8f74220e500e494d7d51743894fa4da31bea586fd5ac441104a08f70047ccc"
+          "size_bytes": 3524,
+          "sha256": "64221e5b47f9098724d26ae21a5df6b88d9647eb7f9f844f519a2acdcb002e01"
         }
-      ]
+      ],
+      "generation": {
+        "selection": "docs/experiments/3w-instance-selection.json",
+        "window_policy": "first_complete_replay_window",
+        "window_rows": 180,
+        "window_span_seconds": 179,
+        "summary_count": 4,
+        "model_version": "xgb-20260912T082447Z"
+      }
     }
   ]
 }

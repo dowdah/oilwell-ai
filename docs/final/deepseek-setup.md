@@ -27,7 +27,7 @@
 
 2026-10-17 只读复查确认，服务器 API 发布目录仍为 `/opt/oilwell-ai/releases/359f10a-deepseek-20260922`，`/opt/oilwell-ai/current-release` 指向该目录。当时基于 `359f10a` 构建的适配现已收齐到 `main` 的交付提交；生产镜像仍沿用原标签，本次不重新部署。源码精确版本以 `main` 提交为准。
 
-2026-10-17 复查确认配置启用、保存的报告 31 可读；没有再次调用供应商，也不据此断言当前余额或外部 API 可用性。2026-10-17 与 2026-10-18 本地 API 测试均为 44 passed、9 skipped，数据库完整测试记录仍是上述 9 月 22 日的结果，见 [评估与限制](evaluation-and-limitations.md)。
+2026-10-17 复查确认配置启用、保存的报告 31 可读；没有再次调用供应商，也不据此断言当前余额或外部 API 可用性。2026-10-17 及 2026-10-18 精简阶段的本地 API 测试为 44 passed、9 skipped；10 月 18 日 SHAP 修复后为 49 passed、9 skipped。数据库完整测试记录仍是上述 9 月 22 日的结果，见 [评估与限制](evaluation-and-limitations.md)。
 
 现有部署记录中的服务器配置文件为 `/opt/oilwell-ai/llm.env`，权限为 `600`。独立部署也应使用受限文件，内容结构如下：
 
@@ -70,6 +70,8 @@ python3 /opt/oilwell-ai/set-deepseek-key.py
 - JSON 字段不完整、返回被截断、认证失败、限流或超时时，保留模板与真实检索引用。
 - 成功报告的审计输入中记录 `llm.provider`、`llm.model` 和 `llm.status=completed`，不记录密钥。
 - LLM 成功不等于证据齐全：如果缺少同窗口离线 SHAP，仍保留相应降级状态。
+
+2026-10-18 本地 SHAP 制品已修复井标识与窗口跨度，覆盖范围见 [使用说明](user-guide-and-demo.md#本地修复版的-shap-覆盖窗口)。本次没有部署或调用 DeepSeek，生产报告 31 的历史降级状态不变。独立实例使用新制品时，只有匹配窗口才消除 SHAP 缺失原因；LLM 关闭或调用失败仍会保留其自身的降级原因。
 
 ## 如何判断调用成功
 

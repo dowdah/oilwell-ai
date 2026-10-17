@@ -54,6 +54,8 @@ LLM 分析文本由提示和 JSON 字段校验约束，仍需人工核验；Refe
 
 DeepSeek 成功返回与证据完整程度分别记录：报告 31 的 LLM 状态为 completed，但因为缺少同窗口离线 SHAP，证据状态仍为 degraded。当前实现参数和验收记录见 [DeepSeek 接入说明](deepseek-setup.md)。
 
+离线 SHAP 生成链路现在保留非空井标识，并从样例首个连续 180 行回放窗口重新计算贡献，首末时间跨度为 179 秒。解释用窗口不按事件标签重置；原有带标签训练窗口逻辑不变。API 仍严格匹配模型版本、特征模式、井 ID 和首末时间。2026-10-18 重建的本地制品只覆盖四个首窗，后续窗口仍可降级；此次未更新生产环境，也不追溯修改历史报告。
+
 ## 知识库治理
 
 `docs/knowledge-base/manifest.json` 是受控诊断的唯一检索知识来源。每个 `excerpt` 是经过人工审阅的检索分段，不是原文镜像；分段保留 source title、source/version、source identifier 及可得的 page/section。清理文档不改变 manifest 内容或路径，架构文档也保持原路径，便于历史报告引用。

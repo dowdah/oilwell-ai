@@ -106,11 +106,13 @@ python ml/scripts/train_binary_candidate.py \
 
 ## 5. 离线解释与验证
 
-根据选定窗口生成解释时，应使用匹配的模型版本和实际回放时间戳。生成的私有窗口不进入 Git，示例输出放在新路径以免替换已交付解释：
+2026-10-18 已修复井标识缺失并重建本地四条解释。准备脚本从与 Edge 相同的 `WELL-xxxxx_*.parquet` 文件名恢复井 ID；显式声明冲突或无法确定身份时拒绝生成。每个样例取首个完整的 180 行连续 1 Hz 回放窗口（首末跨度 179 秒），不按事件标签重新起算窗口，因此与 API 首次预测对齐。训练流程原有的指定标签筛选不变，样例类别也不保证首窗口的模型预测类别。
+
+下列命令只需现存四个样例和当前 XGBoost，不需要重新训练或取得完整研究集。生成的私有特征窗口不进入 Git，示例解释写入新目录以免直接替换已交付制品：
 
 ```bash
 python ml/scripts/prepare_demo_windows.py docs/experiments/3w-instance-selection.json \
-  --data-root /absolute/path/to/complete-3w-dataset \
+  --data-root ml/data/raw/petrobras-3w/dataset \
   --output ml/data/raw/demo-windows.json
 python ml/scripts/generate_explanations.py \
   --model-dir ml/artifacts/current \
@@ -118,6 +120,8 @@ python ml/scripts/generate_explanations.py \
   --output ml/artifacts/retrained-explanations/explanation_manifest.json
 ```
 
-解释 manifest 只保存贡献排名、趋势摘要和元数据；需人工审阅。API 只读取已部署的只读 manifest，不接收任意遥测或特征值作为诊断输入；模型、井和窗口不匹配时不能冒用 SHAP 解释。
+生成器要求非空 `well_id`、带时区且符合模型行数的首末时间、有限特征值；输出时间统一为 UTC。manifest 只保存井与窗口标识、贡献排名/数值、趋势摘要及模型元数据，不含原始行或输入特征值。审阅并验证井、模型版本、特征模式及首末时间全部匹配后，才可替换独立实例的解释文件，并同步更新资产清单的版本、大小与 SHA-256。
 
-运行 `PYTHONPATH=ml python -m pytest ml/tests -q` 检查特征、分组、窗口及 TCN 契约。推理一致性应使用相同样例窗口比较加载结果与分数；测试通过不代表重新训练模型已达到泛化要求。
+本地制品 `xgb-shap-20261017T210806Z` 仅覆盖 [使用说明列出的四个窗口](../docs/final/user-guide-and-demo.md#本地修复版的-shap-覆盖窗口)，不覆盖后续每 10 秒产生的新预测。API 仍只读取只读 manifest，匹配失败继续降级，不能跨井或跨窗口复用解释。此次没有更新生产制品或报告 31；上述流程也不自动部署。
+
+运行 `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=ml python -m pytest ml/tests -q` 检查特征、分组、窗口、解释及 TCN 契约；单线程设置避免本机数值库的 OpenMP 同步停滞。推理一致性应使用相同样例窗口比较加载结果与分数；测试通过不代表重新训练模型已达到泛化要求。
