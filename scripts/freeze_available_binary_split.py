@@ -26,7 +26,7 @@ parser.add_argument("--audit", type=Path, default=Path("docs/phase-b/available-d
 parser.add_argument("--selection", type=Path, default=Path("docs/phase-b/frozen/selection.json"))
 parser.add_argument("--split-output", type=Path, default=Path("docs/phase-b/frozen/split.json"))
 parser.add_argument("--protocol-output", type=Path, default=Path("docs/phase-b/frozen/protocol.json"))
-parser.add_argument("--markdown-output", type=Path, default=Path("docs/phase-b/frozen/data-protocol.md"))
+parser.add_argument("--markdown-output", type=Path, default=Path("ml/artifacts/research-docs/data-protocol.md"))
 args = parser.parse_args()
 
 audit = json.loads(args.audit.read_text())
@@ -101,8 +101,9 @@ args.protocol_output.write_text(json.dumps(protocol, ensure_ascii=False, indent=
 lines = ["# Phase B 可读数据协议", "", "## 固定任务", "", "- Normal = `0`; Abnormal = 当前可读 selection 中的 `3` / `4` / `9`。",
          "- 特征：7 variables、180 秒窗口、10 秒步长、63 statistical features。", "- 划分单位：井；不随机切窗口。",
          "- 阈值和候选只使用 validation；test 井仅在最终候选固定后评估一次。", "", "## 数据与可复现性", "",
+         f"- selection 输入：`{args.selection}`。", f"- split 输出：`{args.split_output}`。", f"- protocol 输出：`{args.protocol_output}`。",
          f"- source dataset root: `{audit['source_dataset_root']}`", f"- selection SHA-256: `{selection_sha}`", f"- split SHA-256: `{split_sha}`",
-         f"- 可用实例：{audit['available_instances']}；排除：{len(audit['exclusions'])}。完整排除清单、文件哈希、连续时长与全零变量见 `../available-data-audit.json`。", "", "## 冻结井级划分", "",
+         f"- 可用实例：{audit['available_instances']}；排除：{len(audit['exclusions'])}。完整排除清单、文件哈希、连续时长与全零变量见审计输入 `{args.audit}`。", "", "## 冻结井级划分", "",
          "| 集合 | 井 | 实例 | Normal 窗口 | Abnormal 窗口 | 原始类实例 |", "| --- | --- | ---: | ---: | ---: | --- |"]
 for name in SPLITS:
     group = details[name]
@@ -110,6 +111,7 @@ for name in SPLITS:
     lines.append(f"| {name} | {', '.join(group['wells'])} | {group['instance_count']} | {group['normal_windows']} | {group['abnormal_windows']} | {raw} |")
 lines.extend(["", "## 覆盖边界", "", "- 三个集合均同时具有 Normal 与 Abnormal 窗口，且井集合互斥。",
               "- 原始异常事件类别的跨井覆盖由上表披露；未在 held-out test 出现的类别不得声称具有跨井泛化能力。",
-              "- 旧 C2 的 187 实例协议保存在 `../historical/c2-unreproduced-freeze/`，是历史记录，不是本实验输入。"])
+              "- 旧 C2 的 187 实例结果属于历史记录，不是本实验输入；其复现边界见仓库文档 `docs/final/evaluation-and-limitations.md`。"])
+args.markdown_output.parent.mkdir(parents=True, exist_ok=True)
 args.markdown_output.write_text("\n".join(lines) + "\n")
 print(json.dumps({"groups": details, "selection_sha256": selection_sha, "split_sha256": split_sha}, ensure_ascii=False))

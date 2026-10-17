@@ -1,0 +1,128 @@
+{
+  "schema_version": "oilwell-demo-assets-v1",
+  "prepared_on": "2026-10-18",
+  "purpose": "Course demo subset; full research data must be obtained again for training. Binary assets remain excluded from Git.",
+  "dataset": {
+    "source_url": "https://github.com/petrobras/3W.git",
+    "source_commit": "d717f0aadbe90b6dc6e15e29f6035e9630d22a5e",
+    "training_dataset_version": "Petrobras 3W Dataset 2.0.0",
+    "local_sample_count": 4,
+    "historical_readable_subset_count": 55,
+    "attribution_files": [
+      {
+        "path": "ml/data/raw/petrobras-3w/LICENSE.md",
+        "size_bytes": 11355,
+        "sha256": "b82d5408ee0b4e796bc8dbbef96c72584be7cc758f0489876f81dd493f2d03c1"
+      },
+      {
+        "path": "ml/data/raw/petrobras-3w/CITATION.md",
+        "size_bytes": 1391,
+        "sha256": "b9395170a4c3b1cf8f65f7e056a29f1dbaf9487142419e91b7323ee938ee6b56"
+      }
+    ],
+    "samples": [
+      {
+        "path": "ml/data/raw/petrobras-3w/dataset/0/WELL-00001_20170201010207.parquet",
+        "size_bytes": 407562,
+        "sha256": "1df6fd74bc3b943570a70ffa075f53ca5b50d606eadea600acca977fc633146e",
+        "source_path": "dataset/0/WELL-00001_20170201010207.parquet",
+        "instance_class": "Normal"
+      },
+      {
+        "path": "ml/data/raw/petrobras-3w/dataset/3/WELL-00001_20170320120025.parquet",
+        "size_bytes": 468294,
+        "sha256": "1ba4c1385ff94b09d5bf9e424bebc77d05b61e99469b4f22a305e6722dc86672",
+        "source_path": "dataset/3/WELL-00001_20170320120025.parquet",
+        "instance_class": "Severe Slugging"
+      },
+      {
+        "path": "ml/data/raw/petrobras-3w/dataset/4/WELL-00001_20170316110203.parquet",
+        "size_bytes": 254192,
+        "sha256": "0ddb6fb89d75048b86ac237db29a19c65b17dba6d000bc75b45f2c8903252b0f",
+        "source_path": "dataset/4/WELL-00001_20170316110203.parquet",
+        "instance_class": "Flow Instability"
+      },
+      {
+        "path": "ml/data/raw/petrobras-3w/dataset/9/WELL-00014_20160304155906.parquet",
+        "size_bytes": 2044537,
+        "sha256": "f733c1984d2eca4002fd3ef0cadd1e5724de14454ac012de862b15649f90051e",
+        "source_path": "dataset/9/WELL-00014_20160304155906.parquet",
+        "instance_class": "Hydrate in Service Line"
+      }
+    ]
+  },
+  "models": [
+    {
+      "role": "active",
+      "directory": "ml/artifacts/current",
+      "version": "xgb-20260912T082447Z",
+      "model_type": "xgboost",
+      "source_code_commit": "760b2344192c928256bf86d914c8b6a1cec2ecf4",
+      "files": [
+        {
+          "path": "ml/artifacts/current/model_metadata.json",
+          "size_bytes": 4837,
+          "sha256": "d8451cf246c95130ec4b43057a26480f54415aec3e24c8a9d1b3ce22fb091b4c"
+        },
+        {
+          "path": "ml/artifacts/current/xgboost_model.json",
+          "size_bytes": 712938,
+          "sha256": "5ffa7134bbf0b1b5e639aad69173f3898f36131f481bbe1623da6a260a29c606"
+        },
+        {
+          "path": "ml/artifacts/current/metrics.json",
+          "size_bytes": 3836,
+          "sha256": "16b62b73893150b219c73a9f412be7d2d335cee9757c72e8c2d6927494f8ccbb"
+        }
+      ]
+    },
+    {
+      "role": "shadow",
+      "directory": "ml/artifacts/tcn-shadow",
+      "version": "tcn-20260912T084752Z",
+      "model_type": "tcn",
+      "source_code_commit": "760b2344192c928256bf86d914c8b6a1cec2ecf4",
+      "files": [
+        {
+          "path": "ml/artifacts/tcn-shadow/model_metadata.json",
+          "size_bytes": 2869,
+          "sha256": "bebc2ecf58a57a33cc8f44c675abd21f73d6959f14d0589e6730460b8f7cda51"
+        },
+        {
+          "path": "ml/artifacts/tcn-shadow/tcn_model.pt",
+          "size_bytes": 205533,
+          "sha256": "21ce43c87bc9bb96dac5d99daf66f2ba2d5b28b84ad24d721b5870555b4a00ee"
+        },
+        {
+          "path": "ml/artifacts/tcn-shadow/tcn_config.json",
+          "size_bytes": 148,
+          "sha256": "d96d90a6c1ed4af4598955ef819ac88501b2eda5a050426028cd849f510cc7f0"
+        },
+        {
+          "path": "ml/artifacts/tcn-shadow/scaler.json",
+          "size_bytes": 486,
+          "sha256": "d4867f7f7e53fc0430c5b54f0a4503e6669a07c0dcac589fb08ac2afac67b8ff"
+        },
+        {
+          "path": "ml/artifacts/tcn-shadow/comparison.json",
+          "size_bytes": 3567,
+          "sha256": "6765ac508fddc74dffe12e943c617650000a678db756d792e0e2a039b6828b50"
+        }
+      ]
+    },
+    {
+      "role": "offline_explanation",
+      "directory": "ml/artifacts/explanations",
+      "version": "xgb-shap-20260912T121943Z",
+      "model_type": "offline_shap",
+      "source_code_commit": null,
+      "files": [
+        {
+          "path": "ml/artifacts/explanations/explanation_manifest.json",
+          "size_bytes": 3236,
+          "sha256": "fe8f74220e500e494d7d51743894fa4da31bea586fd5ac441104a08f70047ccc"
+        }
+      ]
+    }
+  ]
+}

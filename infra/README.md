@@ -1,6 +1,6 @@
 # 部署前提与启动顺序
 
-本说明用于接手者搭建独立环境。现有演示系统使用版本化发布目录和固定镜像，不能把下面的构建命令直接当成生产升级脚本。本次交付收尾只整理源码与文档，不改动生产配置。
+本说明用于接手者搭建独立环境。现有演示系统使用版本化发布目录和固定镜像，不能把下面的构建命令直接当成生产升级脚本。2026-10-18 本地精简不连接生产服务器或树莓派，也不改动其配置。
 
 ## 目标环境
 
@@ -14,7 +14,7 @@ Apple Silicon 的默认原生 API 镜像构建不能直接使用所指定的 x86
 
 ## 独立环境所需材料
 
-源码之外必须准备 [交付清单](../docs/final/delivery-manifest.md) 中的数据样例、模型制品、TLS 证书和环境配置。未配置这些材料时，仅启动容器不代表监测和推理可用。
+源码之外必须准备 [根目录交付清单](../README.md#外置数据模型与配置) 中的数据样例、模型制品、TLS 证书和环境配置。未配置这些材料时，仅启动容器不代表监测和推理可用。
 
 1. 选择自己的域名与私网接入地址，建立 Edge 到云端 MQTT 的私网路径。保留 TLS 主机名校验，不开放公网 MQTT 或 PostgreSQL。
 2. 在仓库根目录创建 `.env`（已有文件时不覆盖），参考 `.env.example` 替换数据库、域名、私网绑定地址及独立 API/Edge MQTT 账号。
@@ -52,6 +52,6 @@ docker compose --env-file .env -f docker-compose.yml up -d --build
 
 ## 完成条件与接手边界
 
-逐项检查模型 ready、心跳、命令回执、完整推理窗口、历史入库、WebSocket 与浏览器页面；参考 [使用说明](../docs/final/user-guide-and-demo.md) 和 [测试矩阵](../docs/final/test-matrix.md)。基础部署不要求外部 LLM；需要时按 [DeepSeek 接入说明](../docs/final/deepseek-setup.md) 独立配置并联调。
+逐项检查模型 ready、心跳、命令回执、完整推理窗口、历史入库、WebSocket 与浏览器页面；参考 [使用说明](../docs/final/user-guide-and-demo.md) 和 [评估与限制](../docs/final/evaluation-and-limitations.md)。基础部署不要求外部 LLM；需要时按 [DeepSeek 接入说明](../docs/final/deepseek-setup.md) 独立配置并联调。
 
-现有生产 API 的实际源码位于 `/opt/oilwell-ai/current-release/source`，顶层旧源码不能用于重建。备份、回退容器、真实环境文件和运维脚本留在受限服务器或本地私有证据目录；源码包不携带这些秘密，也不替代生产维护授权。
+2026-10-17 只读复查记录的生产 API 源码入口为 `/opt/oilwell-ai/current-release/source`，顶层旧源码不能用于重建。生产维护前应重新确认实际发布目录、环境配置和回退条件；本次本地清理不检查或更改服务器备份。源码包不含真实配置或运维凭据，本地历史恢复包已从交付工作区清除。

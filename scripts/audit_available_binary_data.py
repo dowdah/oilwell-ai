@@ -51,7 +51,7 @@ parser.add_argument("selection", type=Path, help="historical C2 selection; it is
 parser.add_argument("--data-root", type=Path, required=True)
 parser.add_argument("--selection-output", type=Path, default=Path("docs/phase-b/frozen/selection.json"))
 parser.add_argument("--audit-json", type=Path, default=Path("docs/phase-b/available-data-audit.json"))
-parser.add_argument("--audit-markdown", type=Path, default=Path("docs/phase-b/available-data-audit.md"))
+parser.add_argument("--audit-markdown", type=Path, default=Path("ml/artifacts/research-docs/available-data-audit.md"))
 args = parser.parse_args()
 
 source = json.loads(args.selection.read_text())
@@ -101,7 +101,8 @@ args.selection_output.write_text(json.dumps(selection, ensure_ascii=False, inden
 args.audit_json.parent.mkdir(parents=True, exist_ok=True)
 args.audit_json.write_text(json.dumps(audit, ensure_ascii=False, indent=2) + "\n")
 
-lines = ["# Phase B 当前可读数据审计", "", "仅审计当前可读 3W 文件；没有搜索或补齐缺失文件。", "", "## 覆盖", "",
+lines = ["# Phase B 当前可读数据审计", "", "仅审计当前可读 3W 文件；没有搜索或补齐缺失文件。", "",
+         f"- selection 输入：`{args.selection}`。", f"- 可读 selection 输出：`{args.selection_output}`。", "", "## 覆盖", "",
          f"- 历史 selection 实例：{audit['source_instances']}", f"- 当前可用实例：{audit['available_instances']}",
          f"- 排除实例：{len(exclusions)}（均为缺失源文件或无完整窗口）", "", "| 原始类 | 实例数 | 唯一井数 | 总有效窗口 | 井 |", "| --- | ---: | ---: | ---: | --- |"]
 for label in TARGETS:
@@ -112,9 +113,10 @@ for well, data in audit["per_well"].items():
     lines.append(f"| {well} | {data['instances']} | {labels} | {data['windows']} |")
 zero_rows = [row for row in available_rows if row["all_zero_variables"]]
 lines.extend(["", "## 信号完整性与连续性", "", "- 所有纳入实例均以 7 个变量、有限值、连续 1 Hz、180 秒窗口、10 秒步长重新检查。",
-             "- 每实例的有效连续时长、窗口数、文件 SHA-256 与全零变量见 `available-data-audit.json`。",
+             f"- 每实例的有效连续时长、窗口数、文件 SHA-256 与全零变量见审计输出 `{args.audit_json}`。",
              f"- 全零变量实例：{len(zero_rows)}；仅披露，不填补、不删除变量、不触发新的 zero-channel 实验。", "", "## 历史基线边界", "",
              "旧 C2 abnormal recall = 0.0051782 是 historical result, not reproduced under the current local dataset copy。它不构成本 Phase B baseline。"])
+args.audit_markdown.parent.mkdir(parents=True, exist_ok=True)
 args.audit_markdown.write_text("\n".join(lines) + "\n")
 print(json.dumps({"available_instances": len(available), "exclusions": len(exclusions),
                   "instance_counts_by_label": audit["instance_counts_by_label"], "unique_wells_by_label": audit["unique_wells_by_label"]}))
